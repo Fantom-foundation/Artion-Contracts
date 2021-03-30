@@ -4,9 +4,14 @@ pragma solidity 0.6.12;
 
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
-contract FantomMarketplace is Context {
+contract FantomMarketplace is Context, ReentrancyGuard {
+    using SafeMath for uint256;
+    using Address for address;
 
     /// @notice Events for the contract
     event ItemListed(
@@ -22,16 +27,21 @@ contract FantomMarketplace is Context {
 
     /// @notice Structure for listed items
     struct Listing {
-        uint256 tokenId;
+        address payable owner;
         uint256 quantity;
         uint256 pricePerItem;
         uint256 startingTime;
         address allowedAddress;
     }
 
-    /// @notice Owner -> NftAdress -> Listing item
-    mapping(address => mapping(address => Listing)) public listings;
+    /// @notice NftAdress -> Token ID -> Listing item
+    mapping(address => mapping(uint256 => Listing)) public listings;
 
+    /// @notice Platform fee
+    uint256 public platformFee;
+
+    /// @notice Platform fee receipient
+    address payable public feeReceipient;
     
     /// @notice Method for listing NFT
     /// @param _nftAddress Address of NFT contract
@@ -49,11 +59,12 @@ contract FantomMarketplace is Context {
         address _allowedAddress
     ) external {
         IERC721 nft = IERC721(_nftAddress);
+        require(_nftAddress.isContract(), "Invalid NFT address.");
         require(nft.ownerOf(_tokenId) == _msgSender(), "Must be owner of NFT.");
         require(nft.isApprovedForAll(_msgSender(), address(this)), "Must be approved before list.");
 
-        listings[_msgSender()][_nftAddress] = Listing(
-            _tokenId,
+        listings[_nftAddress][_tokenId] = Listing(
+            _msgSender(),
             _quantity,
             _pricePerItem,
             _startingTime,
@@ -69,5 +80,39 @@ contract FantomMarketplace is Context {
             _allowedAddress == address(0x0),
             _allowedAddress
         );
+    }
+
+    /// @notice Method for buying listed NFT
+    /// @param _nftAddress NFT contract address
+    function buyItem(
+        address _nftAddress,
+        uint256 _tokenId
+    ) external payable nonReentrant {
+        Listing memory listedItem = listings[_nftAddress][_tokenId];
+        IERC721 nft = IERC721(_nftAddress);
+        require(nft.ownerOf(_tokenId) == listedItem.owner, "Seller doesn't own the item.");
+        require(_getNow() >= listedItem.startingTime, "Item is not buyable yet.");
+        require(msg.value >= listedItem.pricePerItem.mul(listedItem.quantity), "Not enough amount to buy item.");
+        if (listedItem.allowedAddress != address(0)) {
+            require(listedItem.allowedAddress == _msgSender(), "You are not eligable to buy item.");
+        }
+
+        uint256 feeAmount = msg.value.mul(platformFee).div(1e3);
+        feeReceipient.transfer(feeAmount);
+        listedItem.owner.transfer(msg.value.sub(feeAmount));
+
+        // Transfer NFT to buyer
+        nft.safeTransferFrom(listedItem.owner, _msgSender(), _tokenId);
+
+        delete(listings[_nftAddress][_tokenId]);
+    }
+
+    
+    ////////////////////////////
+    /// Internal and Private ///
+    ////////////////////////////
+
+    function _getNow() internal virtual view returns (uint256) {
+        return block.timestamp;
     }
 }
