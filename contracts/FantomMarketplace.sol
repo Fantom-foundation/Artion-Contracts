@@ -2,7 +2,8 @@
 
 pragma solidity 0.6.12;
 
-
+import "@openzeppelin/contracts/introspection/IERC165.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -34,6 +35,9 @@ contract FantomMarketplace is Context, ReentrancyGuard {
         address allowedAddress;
     }
 
+    bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
+    bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
+
     /// @notice NftAdress -> Token ID -> Listing item
     mapping(address => mapping(uint256 => Listing)) public listings;
 
@@ -42,6 +46,15 @@ contract FantomMarketplace is Context, ReentrancyGuard {
 
     /// @notice Platform fee receipient
     address payable public feeReceipient;
+
+    /// @notice Contract constructor
+    constructor(
+        address payable _feeRecipient,
+        uint256 _platformFee
+    ) public {
+        platformFee = _platformFee;
+        feeReceipient = _feeRecipient;
+    }
     
     /// @notice Method for listing NFT
     /// @param _nftAddress Address of NFT contract
@@ -84,6 +97,7 @@ contract FantomMarketplace is Context, ReentrancyGuard {
 
     /// @notice Method for buying listed NFT
     /// @param _nftAddress NFT contract address
+    /// @param _tokenId TokenId
     function buyItem(
         address _nftAddress,
         uint256 _tokenId
