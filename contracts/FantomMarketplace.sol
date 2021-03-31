@@ -25,6 +25,12 @@ contract FantomMarketplace is Context, ReentrancyGuard {
         bool isPrivate,
         address allowedAddress
     );
+    event ItemSold(
+        address indexed buyer,
+        address indexed nft,
+        uint256 tokenId,
+        uint256 price
+    );
 
     /// @notice Structure for listed items
     struct Listing {
@@ -117,8 +123,9 @@ contract FantomMarketplace is Context, ReentrancyGuard {
 
         // Transfer NFT to buyer
         nft.safeTransferFrom(listedItem.owner, _msgSender(), _tokenId);
-
         delete(listings[_nftAddress][_tokenId]);
+
+        emit ItemSold(_msgSender(), _nftAddress, _tokenId, msg.value);
     }
 
     
