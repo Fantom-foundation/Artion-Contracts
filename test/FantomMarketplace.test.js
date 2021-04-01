@@ -14,11 +14,7 @@ const FantomMarketplace = artifacts.require('FantomMarketplace');
 contract('Core ERC721 tests for FantomNFT', function ([
     owner,
     minter,
-    approved,
-    anotherApproved,
-    operator,
-    other,
-    artist,
+    buyer,
     feeRecipient,
 ]) {
     const name = 'Fantom NFT';
@@ -89,5 +85,35 @@ contract('Core ERC721 tests for FantomNFT', function ([
             );
         })
     });
+
+    describe('Buying Item', function() {
+        beforeEach(async function() {
+            await this.nft.setApprovalForAll(this.marketplace.address, true, { from: minter });
+            await this.marketplace.listItem(
+                this.nft.address,
+                firstTokenId,
+                '1',
+                pricePerItem,
+                '0',
+                ZERO_ADDRESS,
+                { from: minter }
+            );
+        });
+
+        it('reverts when seller doesnt own the item', async function() {
+            await this.nft.safeTransferFrom(minter, owner, firstTokenId, { from: minter });
+            await expectRevert(
+                this.marketplace.buyItem(
+                    this.nft.address,
+                    firstTokenId,
+                    {
+                        from: buyer,
+                        value: pricePerItem
+                    }
+                ),
+                "Seller doesn't own the item."
+            );
+        });
+    })
   
 })
