@@ -9,6 +9,7 @@ usePlugin('buidler-contract-sizer')
 const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const RPC_URI = process.env.RPC_URI
+const CHAIN_ID = process.env.CHAIN_ID
 
 module.exports = {
   solc: {
@@ -31,6 +32,7 @@ module.exports = {
     },
     testnet: {
       url: `${RPC_URI}`,
+      chainId: 4002,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     coverage: {
