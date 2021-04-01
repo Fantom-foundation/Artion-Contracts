@@ -114,6 +114,30 @@ contract('Core ERC721 tests for FantomNFT', function ([
                 "Seller doesn't own the item."
             );
         });
+
+        it('reverts when buying before the scheduled time', async function() {
+            await this.nft.setApprovalForAll(this.marketplace.address, true, { from: owner });
+            await this.marketplace.listItem(
+                this.nft.address,
+                secondTokenId,
+                '1',
+                pricePerItem,
+                constants.MAX_UINT256,
+                ZERO_ADDRESS,
+                { from: owner }
+            );
+            await expectRevert(
+                this.marketplace.buyItem(
+                    this.nft.address,
+                    secondTokenId,
+                    {
+                        from: buyer,
+                        value: pricePerItem
+                    }
+                ),
+                "Item is not buyable yet."
+            );
+        })
     })
   
 })
