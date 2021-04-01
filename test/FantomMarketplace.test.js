@@ -3,6 +3,7 @@ const {
     constants,
     expectEvent,
     expectRevert,
+    balance,
 } = require('@openzeppelin/test-helpers');
 const { ZERO_ADDRESS } = constants;
 
@@ -137,6 +138,35 @@ contract('Core ERC721 tests for FantomNFT', function ([
                 ),
                 "Item is not buyable yet."
             );
+        });
+
+        it('reverts when the amount is not enough', async function() {
+            await expectRevert(
+                this.marketplace.buyItem(
+                    this.nft.address,
+                    firstTokenId,
+                    {
+                        from: buyer
+                    }
+                ),
+                "Not enough amount to buy item."
+            );
+        });
+
+        it('successfully purchase item', async function() {
+            const feeBalanceTracker = await balance.tracker(feeRecipient, 'ether');
+            const minterBalanceTracker = await balance.tracker(minter, 'ether');
+            await this.marketplace.buyItem(
+                this.nft.address,
+                firstTokenId,
+                {
+                    from: buyer,
+                    value: pricePerItem
+                }
+            );
+            expect(await this.nft.ownerOf(firstTokenId)).to.be.equal(buyer);
+            expect(await feeBalanceTracker.delta('ether')).to.be.bignumber.equal('0.025');
+            expect(await minterBalanceTracker.delta('ether')).to.be.bignumber.equal('0.975');
         })
     })
   
