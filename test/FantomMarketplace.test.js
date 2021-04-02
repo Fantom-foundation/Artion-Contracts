@@ -87,6 +87,51 @@ contract('Core ERC721 tests for FantomNFT', function ([
         })
     });
 
+    describe('Canceling Item', function() {
+        this.beforeEach(async function() {
+            await this.nft.setApprovalForAll(this.marketplace.address, true, { from: minter });
+            await this.marketplace.listItem(
+                this.nft.address,
+                firstTokenId,
+                '1',
+                pricePerItem,
+                '0',
+                ZERO_ADDRESS,
+                { from: minter }
+            );
+        });
+
+        it('reverts when item is not listed', async function() {
+            await expectRevert(
+                this.marketplace.cancelListing(
+                    this.nft.address,
+                    secondTokenId,
+                    { from: owner }
+                ),
+                "Not listed Item or not owning the item."
+            );
+        });
+
+        it('reverts when not owning the item', async function() {
+            await expectRevert(
+                this.marketplace.cancelListing(
+                    this.nft.address,
+                    firstTokenId,
+                    { from: owner }
+                ),
+                "Not listed Item or not owning the item."
+            );
+        });
+
+        it('successfully cancel the item', async function() {
+            await this.marketplace.cancelListing(
+                this.nft.address,
+                firstTokenId,
+                { from: minter }
+            );
+        })
+    })
+
     describe('Buying Item', function() {
         beforeEach(async function() {
             await this.nft.setApprovalForAll(this.marketplace.address, true, { from: minter });
