@@ -26,6 +26,7 @@ contract('Core ERC721 tests for FantomNFT', function ([
     const nonExistentTokenId = new BN('99');
     const platformFee = new BN('25'); // marketplace platform fee: 2.5%
     const pricePerItem = new BN('1000000000000000000');
+    const newPrice = new BN('500000000000000000');
   
     const RECEIVER_MAGIC_VALUE = '0x150b7a02';
   
@@ -130,7 +131,56 @@ contract('Core ERC721 tests for FantomNFT', function ([
                 { from: minter }
             );
         })
-    })
+    });
+
+
+    describe('Updating Item Price', function() {
+        this.beforeEach(async function() {
+            await this.nft.setApprovalForAll(this.marketplace.address, true, { from: minter });
+            await this.marketplace.listItem(
+                this.nft.address,
+                firstTokenId,
+                '1',
+                pricePerItem,
+                '0',
+                ZERO_ADDRESS,
+                { from: minter }
+            );
+        });
+
+        it('reverts when item is not listed', async function() {
+            await expectRevert(
+                this.marketplace.updateListing(
+                    this.nft.address,
+                    secondTokenId,
+                    newPrice,
+                    { from: owner }
+                ),
+                "Not listed Item or not owning the item."
+            );
+        });
+
+        it('reverts when not owning the item', async function() {
+            await expectRevert(
+                this.marketplace.updateListing(
+                    this.nft.address,
+                    firstTokenId,
+                    newPrice,
+                    { from: owner }
+                ),
+                "Not listed Item or not owning the item."
+            );
+        });
+
+        it('successfully update the item', async function() {
+            await this.marketplace.updateListing(
+                this.nft.address,
+                firstTokenId,
+                newPrice,
+                { from: minter }
+            );
+        })
+    });
 
     describe('Buying Item', function() {
         beforeEach(async function() {

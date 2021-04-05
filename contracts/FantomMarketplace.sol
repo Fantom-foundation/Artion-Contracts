@@ -32,6 +32,12 @@ contract FantomMarketplace is Context, ReentrancyGuard {
         uint256 tokenId,
         uint256 price
     );
+    event ItemUpdated(
+        address indexed owner,
+        address indexed nft,
+        uint256 tokenId,
+        uint256 newPrice
+    );
     event ItemCanceled(
         address indexed owner,
         address indexed nft,
@@ -121,6 +127,26 @@ contract FantomMarketplace is Context, ReentrancyGuard {
 
         delete(listings[_nftAddress][_tokenId]);
         emit ItemCanceled(listedItem.owner, _nftAddress, _tokenId);
+    }
+
+    /// @notice Method for updating listed NFT
+    /// @param _nftAddress Address of NFT contract
+    /// @param _tokenId Token ID of NFT
+    /// @param _newPrice New sale price for each iteam
+    function updateListing(
+        address _nftAddress,
+        uint256 _tokenId,
+        uint256 _newPrice
+    ) external nonReentrant {
+        Listing storage listedItem = listings[_nftAddress][_tokenId];
+        IERC721 nft = IERC721(_nftAddress);
+        require(
+            (listedItem.owner == _msgSender()) && (nft.ownerOf(_tokenId) == listedItem.owner),
+            "Not listed Item or not owning the item."
+        );
+
+        listedItem.pricePerItem = _newPrice;
+        emit ItemUpdated(_msgSender(), _nftAddress, _tokenId, _newPrice);
     }
 
     /// @notice Method for buying listed NFT
