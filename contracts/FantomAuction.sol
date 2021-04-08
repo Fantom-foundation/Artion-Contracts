@@ -9,12 +9,11 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "./EIP2771/BaseRelayRecipient.sol";
 
 /**
  * @notice Secondary sale auction contract for NFTs
  */
-contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
+contract FantomAuction is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using Address for address payable;
     using SafeERC20 for IERC20;
@@ -27,20 +26,24 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
     );
 
     event AuctionCreated(
+        address indexed nftAddress,
         uint256 indexed tokenId
     );
 
     event UpdateAuctionEndTime(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         uint256 endTime
     );
 
     event UpdateAuctionStartTime(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         uint256 startTime
     );
 
     event UpdateAuctionReservePrice(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         uint256 reservePrice
     );
@@ -62,12 +65,14 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
     );
 
     event BidPlaced(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed bidder,
         uint256 bid
     );
 
     event BidWithdrawn(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed bidder,
         uint256 bid
@@ -79,12 +84,14 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
     );
 
     event AuctionResulted(
+        address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed winner,
         uint256 winningBid
     );
 
     event AuctionCancelled(
+        address indexed nftAddress,
         uint256 indexed tokenId
     );
 
@@ -137,33 +144,26 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
         emit FantomAuctionContractDeployed();
     }
 
-    // This is to support Native meta transactions
-    // never use msg.sender directly, use _msgSender() instead
-    function _msgSender()
-    internal
-    view
-    returns (address payable sender)
-    {
-        return BaseRelayRecipient.msgSender();
-    }
-
     /**
      @notice Creates a new auction for a given item
      @dev Only the owner of item can create an auction and must have approved the contract
      @dev In addition to owning the item, the sender also has to have the MINTER role.
      @dev End time for the auction must be in the future.
+     @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the item being auctioned
      @param _reservePrice Item cannot be sold for less than this or minBidIncrement, whichever is higher
      @param _startTimestamp Unix epoch in seconds for the auction start time
      @param _endTimestamp Unix epoch in seconds for the auction end time.
      */
     function createAuction(
+        address _nftAddress,
         uint256 _tokenId,
         uint256 _reservePrice,
         uint256 _startTimestamp,
         uint256 _endTimestamp
     ) external whenNotPaused {
         _createAuction(
+            _nftAddress,
             _tokenId,
             _reservePrice,
             _startTimestamp,
@@ -269,7 +269,7 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
         require(!auction.resulted, "FantomAuction.resultAuction: auction already resulted");
 
         // Ensure this contract is approved to move the token
-        require(IERC721(_nftAddress).isApproved(_tokenId, address(this)), "FantomAuction.resultAuction: auction not approved");
+        require(IERC721(_nftAddress).isApprovedForAll(_msgSender(), address(this)), "FantomAuction.resultAuction: auction not approved");
 
         // Get info on who the highest bidder is
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
@@ -283,14 +283,10 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
         require(winner != address(0), "FantomAuction.resultAuction: no open bids");
 
         // Result the auction
-        auctions[_tokenId].resulted = true;
+        auction.resulted = true;
 
         // Clean up the highest bid
         delete highestBids[_nftAddress][_tokenId];
-
-        // Record the primary sale price for the item
-        uint256 primarySalePrice = winningBid;
-        garmentNft.setPrimarySalePrice(_tokenId, primarySalePrice);
 
         if (winningBid > auction.reservePrice) {
             // Work out total above the reserve
@@ -304,11 +300,11 @@ contract FantomAuction is ReentrancyGuard, BaseRelayRecipient, Ownable {
             require(platformTransferSuccess, "FantomAuction.resultAuction: Failed to send platform fee");
 
             // Send remaining to designer
-            (bool designerTransferSuccess,) = garmentNft.garmentDesigners(_tokenId).call{value : winningBid.sub(platformFeeAboveReserve)}("");
-            require(designerTransferSuccess, "FantomAuction.resultAuction: Failed to send the designer their royalties");
+            (bool ownerTransferSuccess,) = auction.owner.call{value : winningBid.sub(platformFeeAboveReserve)}("");
+            require(ownerTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
         } else {
-            (bool designerTransferSuccess,) = garmentNft.garmentDesigners(_tokenId).call{value : winningBid}("");
-            require(designerTransferSuccess, "FantomAuction.resultAuction: Failed to send the designer their royalties");
+            (bool ownerTransferSuccess,) = auction.owner.call{value : winningBid}("");
+            require(ownerTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
         }
 
         // Transfer the token to the winner
