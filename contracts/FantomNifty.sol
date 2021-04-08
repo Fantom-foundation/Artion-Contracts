@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
 
 
-contract FantomNFT is ERC721("Fantom NFT", "FNFT") {
+contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
 
     /// @dev Events of the contract
     event Minted(

@@ -3,7 +3,7 @@ async function main() {
   const deployerAddress = await deployer.getAddress()
   console.log('Deploying nft with address:', deployerAddress)
 
-  const FNFT = await ethers.getContractFactory('FantomNFT')
+  const FNFT = await ethers.getContractFactory('FantomNifty')
   const contract = await FNFT.deploy()
 
   await contract.deployed()
