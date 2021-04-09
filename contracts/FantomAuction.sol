@@ -162,6 +162,9 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         uint256 _startTimestamp,
         uint256 _endTimestamp
     ) external whenNotPaused {
+        // Ensure this contract is approved to move the token
+        require(IERC721(_nftAddress).isApprovedForAll(_msgSender(), address(this)), "FantomAuction.createAuction: auction not approved");
+
         _createAuction(
             _nftAddress,
             _tokenId,
