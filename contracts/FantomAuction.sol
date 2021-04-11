@@ -163,7 +163,10 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         uint256 _endTimestamp
     ) external whenNotPaused {
         // Ensure this contract is approved to move the token
-        require(IERC721(_nftAddress).isApprovedForAll(_msgSender(), address(this)), "FantomAuction.createAuction: auction not approved");
+        require(
+            IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() && IERC721(_nftAddress).isApprovedForAll(_msgSender(), address(this)),
+            "FantomAuction.createAuction: Not owner and or contract not approved"
+        );
 
         _createAuction(
             _nftAddress,
@@ -260,7 +263,7 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         // Check the auction to see if it can be resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
-        require(_msgSender() == auction.owner, "FantomAuction.resultAuction: Sender must be item owner");
+        require(IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() && _msgSender() == auction.owner, "FantomAuction.resultAuction: Sender must be item owner");
 
         // Check the auction real
         require(auction.endTime > 0, "FantomAuction.resultAuction: Auction does not exist");
@@ -326,7 +329,7 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         // Check valid and not resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
-        require(_msgSender() == auction.owner, "FantomAuction.cancelAuction: Sender must be item owner");
+        require(IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() && _msgSender() == auction.owner, "FantomAuction.cancelAuction: Sender must be item owner");
 
         // Check auction is real
         require(auction.endTime > 0, "FantomAuction.cancelAuction: Auction does not exist");
