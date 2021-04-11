@@ -18,9 +18,6 @@ contract('Core ERC721 tests for FantomNFT', function ([
     buyer,
     feeRecipient,
 ]) {
-    const name = 'Fantom NFT';
-    const symbol = 'FNFT';
-  
     const firstTokenId = new BN('1');
     const secondTokenId = new BN('2');
     const nonExistentTokenId = new BN('99');
