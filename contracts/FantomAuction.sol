@@ -123,8 +123,8 @@ contract FantomAuction is ReentrancyGuard, Ownable {
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
 
-    /// @notice global platform fee, assumed to always be to 1 decimal place i.e. 120 = 12.0%
-    uint256 public platformFee = 120;
+    /// @notice global platform fee, assumed to always be to 1 decimal place i.e. 25 = 2.5%
+    uint256 public platformFee = 25;
 
     /// @notice where to send platform fee funds to
     address payable public platformFeeRecipient;
