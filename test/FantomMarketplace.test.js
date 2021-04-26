@@ -32,7 +32,7 @@ contract('Core ERC721 tests for FantomNFT', function ([
     beforeEach(async function () {
       this.nft = await FantomNFT.new({ from: owner });
       this.marketplace = await FantomMarketplace.new(
-        feeRecipient,
+        '0xFC00FACE00000000000000000000000000000000',
         platformFee,
         { from: owner }
       );
@@ -246,9 +246,9 @@ contract('Core ERC721 tests for FantomNFT', function ([
         });
 
         it('successfully purchase item', async function() {
-            const feeBalanceTracker = await balance.tracker(feeRecipient, 'ether');
+            const feeBalanceTracker = await balance.tracker('0xFC00FACE00000000000000000000000000000000', 'ether');
             const minterBalanceTracker = await balance.tracker(minter, 'ether');
-            await this.marketplace.buyItem(
+            const receipt = await this.marketplace.buyItem(
                 this.nft.address,
                 firstTokenId,
                 {
@@ -256,10 +256,17 @@ contract('Core ERC721 tests for FantomNFT', function ([
                     value: pricePerItem
                 }
             );
+            const cost = await getGasCosts(receipt);
+            console.log(cost);
             expect(await this.nft.ownerOf(firstTokenId)).to.be.equal(buyer);
             expect(await feeBalanceTracker.delta('ether')).to.be.bignumber.equal('0.025');
             expect(await minterBalanceTracker.delta('ether')).to.be.bignumber.equal('0.975');
         })
     })
   
+    async function getGasCosts(receipt) {
+      const tx = await web3.eth.getTransaction(receipt.tx);
+      const gasPrice = new BN(tx.gasPrice);
+      return gasPrice.mul(new BN(receipt.receipt.gasUsed));
+    }
 })
