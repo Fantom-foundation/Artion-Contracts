@@ -10,6 +10,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+
+
+interface IFantomMarketplace {
+    function validateCancelListing(address, uint256, address) external;
+}
+
 /**
  * @notice Secondary sale auction contract for NFTs
  */
@@ -129,11 +135,19 @@ contract FantomAuction is ReentrancyGuard, Ownable {
     /// @notice where to send platform fee funds to
     address payable public platformFeeRecipient;
 
+    /// @notice Marketplace contract
+    IFantomMarketplace public marketplace;
+
     /// @notice for switching off auction creations, bids and withdrawals
     bool public isPaused;
 
     modifier whenNotPaused() {
         require(!isPaused, "Function is currently paused");
+        _;
+    }
+
+    modifier onlyMarketplace() {
+        require(address(marketplace) == _msgSender(), "Sender must be marketplace contract");
         _;
     }
 
@@ -327,29 +341,26 @@ contract FantomAuction is ReentrancyGuard, Ownable {
      */
     function cancelAuction(address _nftAddress, uint256 _tokenId) external nonReentrant {
         // Check valid and not resulted
-        Auction storage auction = auctions[_nftAddress][_tokenId];
+        Auction memory auction = auctions[_nftAddress][_tokenId];
 
         require(IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() && _msgSender() == auction.owner, "FantomAuction.cancelAuction: Sender must be item owner");
-
         // Check auction is real
         require(auction.endTime > 0, "FantomAuction.cancelAuction: Auction does not exist");
-
         // Check auction not already resulted
         require(!auction.resulted, "FantomAuction.cancelAuction: auction already resulted");
 
-        // refund existing top bidder if found
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        if (highestBid.bidder != address(0)) {
-            _refundHighestBidder(highestBid.bidder, highestBid.bid);
+        _cancelAuction(_nftAddress, _tokenId);
+    }
 
-            // Clear up highest bid
-            delete highestBids[_nftAddress][_tokenId];
+    /**
+    * @notice Validate and cancel auction
+    * @dev Only marketplace can access
+    */
+    function validateCancelAuction(address _nftAddress, uint256 _tokenId) external onlyMarketplace {
+        Auction memory auction = auctions[_nftAddress][_tokenId];
+        if (auction.endTime > 0 && !auction.resulted) {
+            _cancelAuction(_nftAddress, _tokenId);
         }
-
-        // Remove auction and top bidder
-        delete auctions[_nftAddress][_tokenId];
-
-        emit AuctionCancelled(_nftAddress, _tokenId);
     }
 
     /**
@@ -359,6 +370,14 @@ contract FantomAuction is ReentrancyGuard, Ownable {
     function toggleIsPaused() external onlyOwner {
         isPaused = !isPaused;
         emit PauseToggled(isPaused);
+    }
+
+    /**
+     @notice Update Marketplace contract
+     @dev Only admin
+     */
+    function updateMarketplace(address _marketplace) external onlyOwner {
+        marketplace = IFantomMarketplace(_marketplace);
     }
 
     /**
@@ -529,6 +548,7 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         require(_endTimestamp > _startTimestamp, "FantomAuction.createAuction: End time must be greater than start");
         require(_endTimestamp > _getNow(), "FantomAuction.createAuction: End time passed. Nobody can bid.");
 
+        marketplace.validateCancelListing(_nftAddress, _tokenId, _msgSender());
         // Setup the auction
         auctions[_nftAddress][_tokenId] = Auction({
             owner : _msgSender(),
@@ -539,6 +559,25 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         });
 
         emit AuctionCreated(_nftAddress, _tokenId);
+    }
+
+    function _cancelAuction(
+        address _nftAddress,
+        uint256 _tokenId
+    ) private {
+        // refund existing top bidder if found
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        if (highestBid.bidder != address(0)) {
+            _refundHighestBidder(highestBid.bidder, highestBid.bid);
+
+            // Clear up highest bid
+            delete highestBids[_nftAddress][_tokenId];
+        }
+
+        // Remove auction and top bidder
+        delete auctions[_nftAddress][_tokenId];
+
+        emit AuctionCancelled(_nftAddress, _tokenId);
     }
 
     /**
