@@ -2,9 +2,15 @@ async function main() {
   const [deployer] = await ethers.getSigners()
   const deployerAddress = await deployer.getAddress()
   console.log('Deploying nft with address:', deployerAddress)
+  const {
+    TREASURY_ADDRESS,
+  } = require('./constants');
 
-  const FNFT = await ethers.getContractFactory('FantomNifty')
-  const contract = await FNFT.deploy()
+  const FNFT = await ethers.getContractFactory('Artion')
+  const contract = await FNFT.deploy(
+    TREASURY_ADDRESS,
+    '2000000000000000000'
+  )
 
   await contract.deployed()
 

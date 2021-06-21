@@ -4,9 +4,9 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/GSN/Context.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-
-contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
+contract Artion is ERC721("Artion", "ART"), Ownable {
 
     /// @dev Events of the contract
     event Minted(
@@ -15,6 +15,12 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
         string tokenUri,
         address minter
     );
+    event UpdatePlatformFee(
+        uint256 platformFee
+    );
+    event UpdatePlatformFeeRecipient(
+        address payable platformFeeRecipient
+    );
 
     /// @dev current max tokenId
     uint256 public tokenIdPointer;
@@ -22,8 +28,20 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
     /// @dev TokenID -> Creator address
     mapping(uint256 => address) public creators;
 
-    /// @dev TokenID -> Primary Ether Sale Price in Wei
-    mapping(uint256 => uint256) public primarySalePrice;
+    /// @notice Platform fee
+    uint256 public platformFee;
+
+    /// @notice Platform fee receipient
+    address payable public feeReceipient;
+
+    /// @notice Contract constructor
+    constructor(
+        address payable _feeRecipient,
+        uint256 _platformFee
+    ) public {
+        platformFee = _platformFee;
+        feeReceipient = _feeRecipient;
+    }
 
     /**
      @notice Mints a NFT AND when minting to a contract checks if the beneficiary is a 721 compatible
@@ -31,7 +49,8 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
      @param _tokenUri URI for the token being minted
      @return uint256 The token ID of the token that was minted
      */
-    function mint(address _beneficiary, string calldata _tokenUri) external returns (uint256) {
+    function mint(address _beneficiary, string calldata _tokenUri) external payable returns (uint256) {
+        require(msg.value >= platformFee, "Insufficient funds to mint.");
 
         // Valid args
         _assertMintingParamsValid(_tokenUri, _msgSender());
@@ -42,6 +61,9 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
         // Mint token and set token URI
         _safeMint(_beneficiary, tokenId);
         _setTokenURI(tokenId, _tokenUri);
+        
+        // Send FTM fee to fee recipient
+        feeReceipient.transfer(msg.value);
 
         // Associate garment designer
         creators[tokenId] = _msgSender();
@@ -65,7 +87,6 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
 
         // Clean up designer mapping
         delete creators[_tokenId];
-        delete primarySalePrice[_tokenId];
     }
 
     function _extractIncomingTokenId() internal pure returns (uint256) {
@@ -94,6 +115,26 @@ contract FantomNifty is ERC721("Fantom Nifty", "FNIF") {
      */
     function isApproved(uint256 _tokenId, address _operator) public view returns (bool) {
         return isApprovedForAll(ownerOf(_tokenId), _operator) || getApproved(_tokenId) == _operator;
+    }
+
+    /**
+     @notice Method for updating platform fee
+     @dev Only admin
+     @param _platformFee uint256 the platform fee to set
+     */
+    function updatePlatformFee(uint256 _platformFee) external onlyOwner {
+        platformFee = _platformFee;
+        emit UpdatePlatformFee(_platformFee);
+    }
+
+    /**
+     @notice Method for updating platform fee address
+     @dev Only admin
+     @param _platformFeeRecipient payable address the address to sends the funds to
+     */
+    function updatePlatformFeeRecipient(address payable _platformFeeRecipient) external onlyOwner {
+        feeReceipient = _platformFeeRecipient;
+        emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
     /////////////////////////
