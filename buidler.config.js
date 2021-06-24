@@ -1,6 +1,7 @@
 require('dotenv').config()
 usePlugin('@nomiclabs/buidler-waffle')
 usePlugin('@nomiclabs/buidler-truffle5')
+usePlugin("@nomiclabs/buidler-etherscan")
 usePlugin('buidler-gas-reporter')
 usePlugin('solidity-coverage')
 usePlugin('@nomiclabs/buidler-solhint')
@@ -36,5 +37,8 @@ module.exports = {
     coverage: {
       url: 'http://localhost:8555',
     },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_APIKEY,
   },
 }

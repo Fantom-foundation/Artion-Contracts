@@ -1,22 +1,18 @@
 const {
   TREASURY_ADDRESS,
-  PLATFORM_FEE,
 } = require('./constants');
 
 async function main() {
   const [deployer] = await ethers.getSigners()
   const deployerAddress = await deployer.getAddress()
-  console.log('Deploying marketplace with address:', deployerAddress)
+  console.log('Deploying auction with address:', deployerAddress)
 
-  const marketplace = await ethers.getContractFactory('FantomMarketplace')
-  const contract = await marketplace.deploy(
-    TREASURY_ADDRESS,
-    PLATFORM_FEE
-  );
+  const auction = await ethers.getContractFactory('FantomAuction')
+  const contract = await auction.deploy(TREASURY_ADDRESS);
 
   await contract.deployed()
 
-  console.log('Marketplace deployed at', contract.address)
+  console.log('Auction deployed at', contract.address)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

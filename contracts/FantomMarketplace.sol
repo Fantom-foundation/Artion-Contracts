@@ -16,6 +16,10 @@ interface IFantomAuction {
     function validateCancelAuction(address, uint256) external;
 }
 
+interface IFantomBundleMarketplace {
+    function validateItemSold(address, uint256) external;
+}
+
 contract FantomMarketplace is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using Address for address payable;
@@ -106,8 +110,16 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
     /// @notice FantomAuction contract
     IFantomAuction public auction;
 
+    /// @notice FantomBundleMarketplace contract
+    IFantomBundleMarketplace public marketplace;
+
     modifier onlyAuction() {
         require(address(auction) == _msgSender(), "Sender must be auction");
+        _;
+    }
+
+    modifier onlyMarketplace() {
+        require(address(marketplace) == _msgSender(), "Sender must be bundle marketplace");
         _;
     }
 
@@ -119,7 +131,7 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
     }
-    
+
     /// @notice Method for listing NFT
     /// @param _nftAddress Address of NFT contract
     /// @param _tokenId Token ID of NFT
@@ -242,6 +254,8 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         } else {
             IERC1155(_nftAddress).safeTransferFrom(_owner, _msgSender(), _tokenId, listedItem.quantity, bytes(""));
         }
+        marketplace.validateItemSold(_nftAddress, _tokenId);
+        auction.validateCancelAuction(_nftAddress, _tokenId);
         emit ItemSold(_owner, _msgSender(), _nftAddress, _tokenId, listedItem.quantity, msg.value.div(listedItem.quantity));
         delete(listings[_nftAddress][_tokenId][_owner]);
     }
@@ -324,6 +338,8 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         } else {
             IERC1155(_nftAddress).safeTransferFrom(_msgSender(), _creator, _tokenId, offer.quantity, bytes(""));
         }
+        marketplace.validateItemSold(_nftAddress, _tokenId);
+        auction.validateCancelAuction(_nftAddress, _tokenId);
         delete(listings[_nftAddress][_tokenId][_msgSender()]);
         delete(offers[_nftAddress][_tokenId][_creator]);
 
@@ -349,6 +365,14 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         auction = IFantomAuction(_auction);
     }
 
+    /**
+     @notice Update auction contract
+     @dev Only admin
+     */
+    function updateBundleMarketplace(address _marketplace) external onlyOwner {
+        marketplace = IFantomBundleMarketplace(_marketplace);
+    }
+
 
     /**
      @notice Method for updating platform fee address
@@ -370,7 +394,20 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
             _cancelListing(_nftAddress, _tokenId, _owner);
         }
     }
-    
+
+    /**
+    * @notice Validate and cancel listing
+    * @dev Only auction can access
+    */
+    function validateItemSold(address _nftAddress, uint256 _tokenId, address _seller, address _buyer) external onlyMarketplace {
+        Listing memory item = listings[_nftAddress][_tokenId][_seller];
+        if (item.quantity > 0) {
+            _cancelListing(_nftAddress, _tokenId, _seller);
+        }
+        delete(offers[_nftAddress][_tokenId][_buyer]);
+        emit OfferCanceled(_buyer, _nftAddress, _tokenId);
+    }
+
     ////////////////////////////
     /// Internal and Private ///
     ////////////////////////////
