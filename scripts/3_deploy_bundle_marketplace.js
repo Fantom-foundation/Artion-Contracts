@@ -8,7 +8,7 @@ async function main() {
   const deployerAddress = await deployer.getAddress()
   console.log('Deploying marketplace with address:', deployerAddress)
 
-  const marketplace = await ethers.getContractFactory('FantomMarketplaceBundle')
+  const marketplace = await ethers.getContractFactory('FantomBundleMarketplace')
   const contract = await marketplace.deploy(
     TREASURY_ADDRESS,
     PLATFORM_FEE

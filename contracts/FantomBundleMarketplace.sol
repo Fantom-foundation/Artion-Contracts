@@ -138,6 +138,26 @@ contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
         feeReceipient = _feeRecipient;
     }
 
+    /// @notice Method for get NFT bundle listing
+    /// @param _owner Owner address
+    /// @param _bundleID Bundle ID
+    function getListing(address _owner, string memory _bundleID) external view returns (
+        address[] memory nfts,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        uint256 price,
+        uint256 startingTime,
+        address allowedAddress
+    ) {
+        bytes32 bundleID = _getBundleID(_bundleID);
+        nfts = listings[_owner][bundleID].nfts;
+        tokenIds = listings[_owner][bundleID].tokenIds;
+        quantities = listings[_owner][bundleID].quantities;
+        price = listings[_owner][bundleID].price;
+        startingTime = listings[_owner][bundleID].startingTime;
+        allowedAddress = listings[_owner][bundleID].allowedAddress;
+    }
+
     /// @notice Method for listing NFT bundle
     /// @param _bundleID Bundle ID
     /// @param _nftAddresses Addresses of NFT contract
@@ -178,16 +198,18 @@ contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
             else {
                 revert("Invalid NFT address.");
             }
+            listing.nfts.push(_nftAddresses[i]);
+            listing.tokenIds.push(_tokenIds[i]);
+            listing.quantities.push(_quantities[i]);
             bundleIdsPerItem[_nftAddresses[i]][_tokenIds[i]].add(bundleID);
             nftIndexes[bundleID][_nftAddresses[i]][_tokenIds[i]] = i;
         }
 
-        listing.nfts = _nftAddresses;
-        listing.tokenIds = _tokenIds;
-        listing.quantities = _quantities;
         listing.price = _price;
         listing.startingTime = _startingTime;
         listing.allowedAddress = _allowedAddress;
+
+        owners[bundleID] = _msgSender();
 
         emit ItemListed(
             _msgSender(),
