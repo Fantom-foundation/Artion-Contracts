@@ -17,7 +17,7 @@ interface IFantomAuction {
 }
 
 interface IFantomBundleMarketplace {
-    function validateItemSold(address, uint256) external;
+    function validateItemSold(address, uint256, uint256) external;
 }
 
 contract FantomMarketplace is Ownable, ReentrancyGuard {
@@ -254,7 +254,7 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         } else {
             IERC1155(_nftAddress).safeTransferFrom(_owner, _msgSender(), _tokenId, listedItem.quantity, bytes(""));
         }
-        marketplace.validateItemSold(_nftAddress, _tokenId);
+        marketplace.validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
         auction.validateCancelAuction(_nftAddress, _tokenId);
         emit ItemSold(_owner, _msgSender(), _nftAddress, _tokenId, listedItem.quantity, msg.value.div(listedItem.quantity));
         delete(listings[_nftAddress][_tokenId][_owner]);
@@ -338,7 +338,7 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         } else {
             IERC1155(_nftAddress).safeTransferFrom(_msgSender(), _creator, _tokenId, offer.quantity, bytes(""));
         }
-        marketplace.validateItemSold(_nftAddress, _tokenId);
+        marketplace.validateItemSold(_nftAddress, _tokenId, offer.quantity);
         auction.validateCancelAuction(_nftAddress, _tokenId);
         delete(listings[_nftAddress][_tokenId][_msgSender()]);
         delete(offers[_nftAddress][_tokenId][_creator]);

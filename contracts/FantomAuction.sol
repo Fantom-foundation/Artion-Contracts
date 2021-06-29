@@ -17,7 +17,7 @@ interface IFantomMarketplace {
 }
 
 interface IFantomBundleMarketplace {
-    function validateItemSold(address, uint256) external;
+    function validateItemSold(address, uint256, uint256) external;
 }
 
 /**
@@ -154,7 +154,7 @@ contract FantomAuction is ReentrancyGuard, Ownable {
     }
 
     modifier onlyMarketplace() {
-        require(address(marketplace) == _msgSender(), "Sender must be marketplace contract");
+        require(address(marketplace) == _msgSender() || address(bundleMarketplace) == _msgSender(), "Sender must be marketplace contract");
         _;
     }
 
@@ -337,7 +337,7 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         // Transfer the token to the winner
         IERC721(_nftAddress).safeTransferFrom(IERC721(_nftAddress).ownerOf(_tokenId), winner, _tokenId);
 
-        bundleMarketplace.validateItemSold(_nftAddress, _tokenId);
+        bundleMarketplace.validateItemSold(_nftAddress, _tokenId, uint256(1));
 
         emit AuctionResulted(_nftAddress, _tokenId, winner, winningBid);
     }
