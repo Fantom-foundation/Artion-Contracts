@@ -13,6 +13,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 
 interface IFantomMarketplace {
+    function minters(uint256) external returns (address);
+    function royalties(uint256) external returns (uint8);
+    function artion() external returns (address);
     function validateCancelListing(address, uint256, address) external;
 }
 
@@ -315,6 +318,8 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         // Clean up the highest bid
         delete highestBids[_nftAddress][_tokenId];
 
+        uint256 payAmount;
+
         if (winningBid > auction.reservePrice) {
             // Work out total above the reserve
             uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
@@ -327,12 +332,21 @@ contract FantomAuction is ReentrancyGuard, Ownable {
             require(platformTransferSuccess, "FantomAuction.resultAuction: Failed to send platform fee");
 
             // Send remaining to designer
-            (bool ownerTransferSuccess,) = auction.owner.call{value : winningBid.sub(platformFeeAboveReserve)}("");
-            require(ownerTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
+            payAmount = winningBid.sub(platformFeeAboveReserve);
         } else {
-            (bool ownerTransferSuccess,) = auction.owner.call{value : winningBid}("");
-            require(ownerTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
+            payAmount = winningBid;
         }
+
+        address minter = marketplace.minters(_tokenId);
+        uint8 royalty = marketplace.royalties(_tokenId);
+        if (_nftAddress == marketplace.artion() && minter != address(0) && royalty != uint8(0)) {
+            uint256 royaltyFee = payAmount.mul(royalty).div(100);
+            (bool royaltyTransferSuccess,) = payable(minter).call{value : royaltyFee}("");
+            require(royaltyTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
+            payAmount = payAmount.sub(royaltyFee);
+        }
+        (bool ownerTransferSuccess,) = auction.owner.call{value : payAmount}("");
+        require(ownerTransferSuccess, "FantomAuction.resultAuction: Failed to send the owner their royalties");
 
         // Transfer the token to the winner
         IERC721(_nftAddress).safeTransferFrom(IERC721(_nftAddress).ownerOf(_tokenId), winner, _tokenId);

@@ -95,6 +95,12 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
     bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
+    /// @notice NftAddress -> Token ID -> Minter
+    mapping(uint256 => address) public minters;
+
+    /// @notice NftAddress -> Token ID -> Royalty
+    mapping(uint256 => uint8) public royalties;
+
     /// @notice NftAddress -> Token ID -> Owner -> Listing item
     mapping(address => mapping(uint256 => mapping(address => Listing))) public listings;
 
@@ -112,6 +118,9 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
 
     /// @notice FantomBundleMarketplace contract
     IFantomBundleMarketplace public marketplace;
+
+    /// @notice Artion contract
+    address public artion;
 
     modifier onlyAuction() {
         require(address(auction) == _msgSender(), "Sender must be auction");
@@ -245,6 +254,12 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         uint256 feeAmount = msg.value.mul(platformFee).div(1e3);
         (bool feeTransferSuccess,) = feeReceipient.call{value : feeAmount}("");
         require(feeTransferSuccess, "FantomMarketplace: Fee transfer failed");
+        if (_nftAddress == artion && minters[_tokenId] != address(0) && royalties[_tokenId] != uint8(0)) {
+            uint256 royaltyFee = msg.value.sub(feeAmount).mul(royalties[_tokenId]).div(100);
+            (bool royaltyTransferSuccess,) = payable(minters[_tokenId]).call{value : royaltyFee}("");
+            require(royaltyTransferSuccess, "FantomMarketplace: Royalty fee transfer failed");
+            feeAmount = feeAmount.add(royaltyFee);
+        }
         (bool ownerTransferSuccess,) = _owner.call{value : msg.value.sub(feeAmount)}("");
         require(ownerTransferSuccess, "FantomMarketplace: Owner transfer failed");
 
@@ -307,6 +322,9 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
     }
 
     /// @notice Method for accepting the offer
+    /// @param _nftAddress NFT contract address
+    /// @param _tokenId TokenId
+    /// @param _creator Offer creator address
     function acceptOffer(
         address _nftAddress,
         uint256 _tokenId,
@@ -328,8 +346,14 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
+        uint256 royaltyFee;
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
+        if (_nftAddress == artion && minters[_tokenId] != address(0) && royalties[_tokenId] != uint8(0)) {
+            royaltyFee = price.sub(feeAmount).mul(royalties[_tokenId]).div(100);
+            offer.payToken.safeTransferFrom(_creator, minters[_tokenId], royaltyFee);
+            feeAmount = feeAmount.add(royaltyFee);
+        }
         offer.payToken.safeTransferFrom(_creator, _msgSender(), price.sub(feeAmount));
 
         // Transfer NFT to buyer
@@ -345,6 +369,17 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
 
         emit ItemSold(_msgSender(), _creator, _nftAddress, _tokenId, offer.quantity, offer.pricePerItem);
         emit OfferCanceled(_creator, _nftAddress, _tokenId);
+    }
+
+    /// @notice Method for setting royalty
+    /// @param _tokenId TokenId
+    /// @param _royalty Royalty
+    function registerRoyalty(uint256 _tokenId, uint8 _royalty) external {
+        require(artion != address(0), "Artion not set");
+        require(IERC721(artion).ownerOf(_tokenId) == _msgSender(), "Not owning the item.");
+        require(minters[_tokenId] == address(0), "Royalty already set");
+        minters[_tokenId] = _msgSender();
+        royalties[_tokenId] = _royalty;
     }
 
     /**
@@ -366,13 +401,21 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
     }
 
     /**
-     @notice Update auction contract
+     @notice Update bundle marketplace contract
      @dev Only admin
      */
     function updateBundleMarketplace(address _marketplace) external onlyOwner {
         marketplace = IFantomBundleMarketplace(_marketplace);
     }
 
+    /**
+     @notice Update artion contract
+     @dev Only admin
+     */
+    function updateArtion(address _artion) external onlyOwner {
+        require(IERC165(_artion).supportsInterface(INTERFACE_ID_ERC721), "Not ERC721");
+        artion = _artion;
+    }
 
     /**
      @notice Method for updating platform fee address
