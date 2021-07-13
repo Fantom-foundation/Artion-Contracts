@@ -4,19 +4,25 @@ const {
 } = require('./constants');
 
 async function main() {
-  const [deployer] = await ethers.getSigners()
-  const deployerAddress = await deployer.getAddress()
-  console.log('Deploying marketplace with address:', deployerAddress)
+  const Marketplace = await ethers.getContractFactory('FantomBundleMarketplace')
+  const marketplaceImpl = await Marketplace.deploy();
+  await marketplaceImpl.deployed();
+  console.log("Bundle Marketplace deployed to:", marketplaceImpl.address);
 
-  const marketplace = await ethers.getContractFactory('FantomBundleMarketplace')
-  const contract = await marketplace.deploy(
-    TREASURY_ADDRESS,
-    PLATFORM_FEE
-  );
+  // const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
+  // mainnet
+  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xde13797eC0C654bFF3B10896b176F2c901a84022', []);
+  // testnet
+  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xF6eD2c50fcEF4FDe67f2819a4Cd8af282733B25a', []);
+  // await marketplaceProxy.deployed();
+  // console.log("Bundle Marketplace Proxy deployed at ", marketplaceProxy.address);
 
-  await contract.deployed()
-
-  console.log('Marketplace deployed at', contract.address)
+  // const marketplace = await ethers.getContractAt("FantomBundleMarketplace", marktplaeceProxy.address);
+  // await marketplace.initialize(
+  //   TREASURY_ADDRESS,
+  //   PLATFORM_FEE
+  // );
+  // console.log("Bundle Marketplace Proxy initialized");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

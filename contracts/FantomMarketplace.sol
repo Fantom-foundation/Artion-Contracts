@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 interface IFantomAuction {
     function validateCancelAuction(address, uint256) external;
@@ -20,9 +20,9 @@ interface IFantomBundleMarketplace {
     function validateItemSold(address, uint256, uint256) external;
 }
 
-contract FantomMarketplace is Ownable, ReentrancyGuard {
+contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
-    using Address for address payable;
+    using AddressUpgradeable for address payable;
     using SafeERC20 for IERC20;
 
     /// @notice Events for the contract
@@ -132,13 +132,16 @@ contract FantomMarketplace is Ownable, ReentrancyGuard {
         _;
     }
 
-    /// @notice Contract constructor
-    constructor(
+    /// @notice Contract initializer
+    function initialize(
         address payable _feeRecipient,
         uint256 _platformFee
-    ) public {
+    ) public initializer {
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
+
+        __Ownable_init();
+        __ReentrancyGuard_init();
     }
 
     /// @notice Method for listing NFT

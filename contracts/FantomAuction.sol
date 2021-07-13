@@ -2,14 +2,13 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 
 interface IFantomMarketplace {
@@ -26,9 +25,9 @@ interface IFantomBundleMarketplace {
 /**
  * @notice Secondary sale auction contract for NFTs
  */
-contract FantomAuction is ReentrancyGuard, Ownable {
+contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
-    using Address for address payable;
+    using AddressUpgradeable for address payable;
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted only on construction. To be used by indexers
@@ -161,11 +160,15 @@ contract FantomAuction is ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor(address payable _platformFeeRecipient) public {
+    /// @notice Contract initializer
+    function initialize(address payable _platformFeeRecipient) public initializer {
         require(_platformFeeRecipient != address(0), "FantomAuction: Invalid Platform Fee Recipient");
 
         platformFeeRecipient = _platformFeeRecipient;
         emit FantomAuctionContractDeployed();
+
+        __Ownable_init();
+        __ReentrancyGuard_init();
     }
 
     /**

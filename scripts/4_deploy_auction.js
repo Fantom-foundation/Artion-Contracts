@@ -3,16 +3,22 @@ const {
 } = require('./constants');
 
 async function main() {
-  const [deployer] = await ethers.getSigners()
-  const deployerAddress = await deployer.getAddress()
-  console.log('Deploying auction with address:', deployerAddress)
+  const Auction = await ethers.getContractFactory('FantomAuction')
+  const auctionImpl = await Auction.deploy();
+  await auctionImpl.deployed();
+  console.log('Auction deployed to:', auctionImpl.address);
 
-  const auction = await ethers.getContractFactory('FantomAuction')
-  const contract = await auction.deploy(TREASURY_ADDRESS);
+  const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
+  // mainnet
+  // const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(auctionImpl.address, '0xde13797eC0C654bFF3B10896b176F2c901a84022', []);
+  // testnet
+  const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(auctionImpl.address, '0xF6eD2c50fcEF4FDe67f2819a4Cd8af282733B25a', []);
+  await auctionProxy.deployed();
+  console.log("Auction Proxy deployed at ", auctionProxy.address);
 
-  await contract.deployed()
-
-  console.log('Auction deployed at', contract.address)
+  const auction = await ethers.getContractAt("FantomAuction", auctionProxy.address);
+  await auction.initialize(TREASURY_ADDRESS);
+  console.log("Auction Proxy initialized");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

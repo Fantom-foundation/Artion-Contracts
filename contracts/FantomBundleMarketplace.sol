@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 interface IFantomAuction {
     function validateCancelAuction(address, uint256) external;
@@ -21,9 +21,9 @@ interface IFantomMarketplace {
     function validateItemSold(address, uint256, address, address) external;
 }
 
-contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
+contract FantomBundleMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
-    using Address for address payable;
+    using AddressUpgradeable for address payable;
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -129,13 +129,16 @@ contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
         _;
     }
 
-    /// @notice Contract constructor
-    constructor(
+    /// @notice Contract initializer
+    function initialize(
         address payable _feeRecipient,
         uint256 _platformFee
-    ) public {
+    ) public initializer {
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
+
+        __Ownable_init();
+        __ReentrancyGuard_init();
     }
 
     /// @notice Method for get NFT bundle listing
@@ -447,7 +450,14 @@ contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
                         delete(listings[_owner][bundleID]);
                         delete(owners[bundleID]);
                         delete(bundleIds[bundleID]);
-                        emit ItemCanceled(_owner, _bundleID);
+                        emit ItemUpdated(
+                            _owner,
+                            _bundleID,
+                            new address[](0),
+                            new uint256[](0),
+                            new uint256[](0),
+                            0
+                        );
                         continue;
                     } else {
                         if (index < listing.nfts.length - 1) {
@@ -463,7 +473,7 @@ contract FantomBundleMarketplace is Ownable, ReentrancyGuard {
                 }
 
                 emit ItemUpdated(
-                    _msgSender(),
+                    _owner,
                     _bundleID,
                     listing.nfts,
                     listing.tokenIds,
