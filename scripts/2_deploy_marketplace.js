@@ -14,20 +14,20 @@ async function main() {
   await marketplaceImpl.deployed();
   console.log("Marketplace deployed to:", marketplaceImpl.address);
 
-  const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
+  // const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
   // mainnet
-  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xde13797eC0C654bFF3B10896b176F2c901a84022', []);
+  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xde13797eC0C654bFF3B10896b176F2c901a84022', []);
   // testnet
   // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xF6eD2c50fcEF4FDe67f2819a4Cd8af282733B25a', []);
-  await marketplaceProxy.deployed();
-  console.log("Marketplace Proxy deployed at ", marketplaceProxy.address);
+  // await marketplaceProxy.deployed();
+  // console.log("Marketplace Proxy deployed at ", marketplaceProxy.address);
 
-  const marketplace = await ethers.getContractAt("FantomMarketplace", marketplaceProxy.address);
-  await marketplace.initialize(
-    TREASURY_ADDRESS,
-    PLATFORM_FEE
-  );
-  console.log("Marketplace Proxy initialized");
+  // const marketplace = await ethers.getContractAt("FantomMarketplace", marketplaceProxy.address);
+  // await marketplace.initialize(
+  //   TREASURY_ADDRESS,
+  //   PLATFORM_FEE
+  // );
+  // console.log("Marketplace Proxy initialized");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

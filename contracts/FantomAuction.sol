@@ -12,8 +12,8 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 
 interface IFantomMarketplace {
-    function minters(uint256) external returns (address);
-    function royalties(uint256) external returns (uint8);
+    function minters(address, uint256) external returns (address);
+    function royalties(address, uint256) external returns (uint8);
     function artion() external returns (address);
     function validateCancelListing(address, uint256, address) external;
 }
@@ -340,8 +340,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             payAmount = winningBid;
         }
 
-        address minter = marketplace.minters(_tokenId);
-        uint8 royalty = marketplace.royalties(_tokenId);
+        address minter = marketplace.minters(_nftAddress, _tokenId);
+        uint8 royalty = marketplace.royalties(_nftAddress, _tokenId);
         if (_nftAddress == marketplace.artion() && minter != address(0) && royalty != uint8(0)) {
             uint256 royaltyFee = payAmount.mul(royalty).div(100);
             (bool royaltyTransferSuccess,) = payable(minter).call{value : royaltyFee}("");
