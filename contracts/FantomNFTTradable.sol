@@ -152,4 +152,14 @@ contract FantomNFTTradable is ERC721, Ownable {
 
         return super.isApprovedForAll(owner, operator);
     }
+
+    /**
+     * Override _isApprovedOrOwner to whitelist Fantom contracts to enable gas-less listings.
+     */
+    function _isApprovedOrOwner(address spender, uint256 tokenId) override internal view returns (bool) {
+        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+        address owner = ERC721.ownerOf(tokenId);
+        if (isApprovedForAll(owner, spender)) return true;
+        return super._isApprovedOrOwner(spender, tokenId);
+    }
 }
