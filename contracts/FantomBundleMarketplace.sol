@@ -328,6 +328,10 @@ contract FantomBundleMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeab
         bytes32 bundleID = _getBundleID(_bundleID);
         require(owners[bundleID] != address(0), "Invalid Bundle ID.");
         require(_deadline > _getNow(), "Invalid expiration");
+        require(_price > 0, "Offer price not set.");
+
+        Offer memory offer = offers[bundleID][_msgSender()];
+        require(offer.deadline <= _getNow(), "Offer already created.");
 
         _approveHelper(_payToken, address(this), uint256(~0));
         Listing storage listing = listings[owners[bundleID]][bundleID];
@@ -350,6 +354,8 @@ contract FantomBundleMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeab
         string memory _bundleID
     ) external {
         bytes32 bundleID = _getBundleID(_bundleID);
+        Offer memory offer = offers[bundleID][_msgSender()];
+        require(offer.deadline > _getNow(), "Offer doesn't exist or expired.");
         delete(offers[bundleID][_msgSender()]);
         emit OfferCanceled(_msgSender(), _bundleID);
     }
@@ -363,7 +369,7 @@ contract FantomBundleMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeab
         require(owners[bundleID] == _msgSender(), "Not owning the bundle.");
 
         Offer memory offer = offers[bundleID][_creator];
-        require(offer.price > 0, "Offer doesn't exist.");
+        require(offer.deadline > _getNow(), "Offer doesn't exist or expired.");
 
         uint256 price = offer.price;
         uint256 feeAmount = price.mul(platformFee).div(1e3);

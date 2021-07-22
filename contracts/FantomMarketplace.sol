@@ -142,6 +142,30 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         _;
     }
 
+    modifier isListed(address _nftAddress, uint256 _tokenId) {
+        Listing memory listing = listings[_nftAddress][_tokenId][_msgSender()];
+        require(listing.quantity > 0, "Not listed item.");
+        _;
+    }
+
+    modifier notListed(address _nftAddress, uint256 _tokenId) {
+        Listing memory listing = listings[_nftAddress][_tokenId][_msgSender()];
+        require(listing.quantity == 0, "Already listed.");
+        _;
+    }
+
+    modifier offerExists(address _nftAddress, uint256 _tokenId, address _creator) {
+        Offer memory offer = offers[_nftAddress][_tokenId][_creator];
+        require(offer.quantity > 0 && offer.deadline > _getNow(), "Offer doesn't exist or expired.");
+        _;
+    }
+
+    modifier offerNotExists(address _nftAddress, uint256 _tokenId, address _creator) {
+        Offer memory offer = offers[_nftAddress][_tokenId][_creator];
+        require(offer.quantity == 0 || offer.deadline <= _getNow(), "Offer already created.");
+        _;
+    }
+
     /// @notice Contract initializer
     function initialize(
         address payable _feeRecipient,
@@ -168,7 +192,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _pricePerItem,
         uint256 _startingTime,
         address _allowedAddress
-    ) external {
+    ) external notListed(_nftAddress, _tokenId) {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _msgSender(), "Must be owner of NFT.");
@@ -205,8 +229,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function cancelListing(
         address _nftAddress,
         uint256 _tokenId
-    ) external nonReentrant {
-        require(listings[_nftAddress][_tokenId][_msgSender()].quantity > 0, "Not listed item.");
+    ) external nonReentrant isListed(_nftAddress, _tokenId) {
         _cancelListing(_nftAddress, _tokenId, _msgSender());
     }
 
@@ -218,9 +241,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _nftAddress,
         uint256 _tokenId,
         uint256 _newPrice
-    ) external nonReentrant {
+    ) external nonReentrant isListed(_nftAddress, _tokenId) {
         Listing storage listedItem = listings[_nftAddress][_tokenId][_msgSender()];
-        require(listedItem.quantity > 0, "Not listed item.");
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _msgSender(), "Not owning the item.");
@@ -244,9 +266,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _nftAddress,
         uint256 _tokenId,
         address payable _owner
-    ) external payable nonReentrant {
+    ) external payable nonReentrant isListed(_nftAddress, _tokenId) {
         Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-        require(listedItem.quantity > 0, "Not listed item.");
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _owner, "Not owning the item.");
@@ -302,7 +323,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _quantity,
         uint256 _pricePerItem,
         uint256 _deadline
-    ) external {
+    ) external offerNotExists(_nftAddress, _tokenId, _msgSender()) {
         require(
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721) ||
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155), 
@@ -329,7 +350,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function cancelOffer(
         address _nftAddress,
         uint256 _tokenId
-    ) external {
+    ) external offerExists(_nftAddress, _tokenId, _msgSender()) {
         delete(offers[_nftAddress][_tokenId][_msgSender()]);
         emit OfferCanceled(_msgSender(), _nftAddress, _tokenId);
     }
@@ -342,7 +363,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _nftAddress,
         uint256 _tokenId,
         address _creator
-    ) external nonReentrant {
+    ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
         Offer memory offer = offers[_nftAddress][_tokenId][_creator];
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
@@ -355,7 +376,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         else {
             revert("Invalid NFT address.");
         }
-        require(offer.pricePerItem > 0 && offer.quantity > 0, "Offer doesn't exist.");
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
