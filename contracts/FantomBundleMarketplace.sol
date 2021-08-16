@@ -18,10 +18,6 @@ interface IFantomAddressRegistry {
 
     function marketplace() external view returns (address);
 
-    function factory() external view returns (address);
-
-    function privateFactory() external view returns (address);
-
     function tokenRegistry() external view returns (address);
 }
 
@@ -244,10 +240,11 @@ contract FantomBundleMarketplace is
             } else {
                 revert("invalid nft address");
             }
-            listing.nfts.push(_nftAddresses[i]);
+            address _nft = _nftAddresses[i];
+            listing.nfts.push(_nft);
             listing.tokenIds.push(_tokenIds[i]);
-            bundleIdsPerItem[_nftAddresses[i]][_tokenIds[i]].add(bundleID);
-            nftIndexes[bundleID][_nftAddresses[i]][_tokenIds[i]] = i;
+            bundleIdsPerItem[_nft][_tokenIds[i]].add(bundleID);
+            nftIndexes[bundleID][_nft][_tokenIds[i]] = i;
         }
 
         listing.payToken = _payToken;

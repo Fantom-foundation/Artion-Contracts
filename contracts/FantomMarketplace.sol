@@ -81,8 +81,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address indexed creator,
         address indexed nft,
         uint256 tokenId,
-        address payToken,
         uint256 quantity,
+        address payToken,
         uint256 pricePerItem,
         uint256 deadline
     );
@@ -91,7 +91,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address indexed nft,
         uint256 tokenId
     );
-    event UpdatePlatformFee(uint8 platformFee);
+    event UpdatePlatformFee(uint16 platformFee);
     event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
     /// @notice Structure for listed items
@@ -111,7 +111,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     struct CollectionRoyalty {
-        uint8 royalty;
+        uint16 royalty;
         address creator;
         address feeRecipient;
     }
@@ -123,7 +123,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => address)) public minters;
 
     /// @notice NftAddress -> Token ID -> Royalty
-    mapping(address => mapping(uint256 => uint8)) public royalties;
+    mapping(address => mapping(uint256 => uint16)) public royalties;
 
     /// @notice NftAddress -> Token ID -> Owner -> Listing item
     mapping(address => mapping(uint256 => mapping(address => Listing)))
@@ -134,7 +134,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         public offers;
 
     /// @notice Platform fee
-    uint8 public platformFee;
+    uint16 public platformFee;
 
     /// @notice Platform fee receipient
     address payable public feeReceipient;
@@ -227,7 +227,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Contract initializer
-    function initialize(address payable _feeRecipient, uint8 _platformFee)
+    function initialize(address payable _feeRecipient, uint16 _platformFee)
         public
         initializer
     {
@@ -434,7 +434,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
 
         address minter = minters[_nftAddress][_tokenId];
-        uint8 royalty = royalties[_nftAddress][_tokenId];
+        uint16 royalty = royalties[_nftAddress][_tokenId];
         if (minter != address(0) && royalty != 0) {
             uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
             if (_payToken == address(0)) {
@@ -565,8 +565,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _msgSender(),
             _nftAddress,
             _tokenId,
-            address(_payToken),
             _quantity,
+            address(_payToken),
             _pricePerItem,
             _deadline
         );
@@ -617,7 +617,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
         address minter = minters[_nftAddress][_tokenId];
-        uint8 royalty = royalties[_nftAddress][_tokenId];
+        uint16 royalty = royalties[_nftAddress][_tokenId];
         if (minter != address(0) && royalty != 0) {
             royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
             offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
@@ -677,7 +677,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function registerRoyalty(
         address _nftAddress,
         uint256 _tokenId,
-        uint8 _royalty
+        uint16 _royalty
     ) external {
         require(_royalty <= 10000, "invalid royalty");
         require(
@@ -704,7 +704,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function registerCollectionRoyalty(
         address _nftAddress,
         address _creator,
-        uint8 _royalty,
+        uint16 _royalty,
         address _feeRecipient
     ) external onlyOwner {
         require(_creator != address(0), "invalid creator address");
@@ -733,9 +733,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /**
      @notice Method for updating platform fee
      @dev Only admin
-     @param _platformFee uint8 the platform fee to set
+     @param _platformFee uint16 the platform fee to set
      */
-    function updatePlatformFee(uint8 _platformFee) external onlyOwner {
+    function updatePlatformFee(uint16 _platformFee) external onlyOwner {
         platformFee = _platformFee;
         emit UpdatePlatformFee(_platformFee);
     }
