@@ -20,6 +20,7 @@ contract FantomTokenRegistry is Ownable {
   function add(address token) external onlyOwner {
     require(!enabled[token], "token already added");
     enabled[token] = true;
+    emit TokenAdded(token);
   }
 
   /**
@@ -30,5 +31,6 @@ contract FantomTokenRegistry is Ownable {
   function remove(address token) external onlyOwner {
     require(enabled[token], "token not exist");
     enabled[token] = false;
+    emit TokenRemoved(token);
   }
 }
