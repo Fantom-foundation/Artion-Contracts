@@ -304,7 +304,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _nftAddress,
         uint256 _tokenId,
         uint256 _bidAmount
-    ) internal nonReentrant whenNotPaused {
+    ) internal whenNotPaused {
         Auction storage auction = auctions[_nftAddress][_tokenId];
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
