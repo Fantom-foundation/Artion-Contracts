@@ -425,9 +425,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address winner = highestBid.bidder;
         uint256 winningBid = highestBid.bid;
 
-        // Ensure auction not already resulted
-        require(winningBid >= auction.reservePrice, "reserve not reached");
-
         // Ensure there is a winner
         require(winner != address(0), "no open bids");
 
@@ -870,8 +867,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         } else {
             IERC20 payToken = IERC20(auction.payToken);
             require(
-                payToken.transferFrom(
-                    address(this),
+                payToken.transfer(
                     _currentHighestBidder,
                     _currentHighestBid
                 ),

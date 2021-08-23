@@ -45,4 +45,7 @@ module.exports = {
       url: 'http://localhost:8555',
     },
   },
+  etherscan: {
+    apiKey: '46DD6NK19R2AZQQIJIY1FXR85HKM2XSNBE'
+  }
 };
