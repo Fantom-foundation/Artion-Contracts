@@ -22,6 +22,8 @@ interface IFantomAddressRegistry {
     function privateFactory() external view returns (address);
 
     function tokenRegistry() external view returns (address);
+
+    function priceFeed() external view returns (address);
 }
 
 interface IFantomBundleMarketplace {
@@ -33,11 +35,17 @@ interface IFantomBundleMarketplace {
 }
 
 interface IFantomNFTFactory {
-    function exists(address) external returns (bool);
+    function exists(address) external view returns (bool);
 }
 
 interface IFantomTokenRegistry {
-    function enabled(address) external returns (bool);
+    function enabled(address) external view returns (bool);
+}
+
+interface IFantomPriceFeed {
+    function wFTM() external view returns (address);
+
+    function getPrice(address) external view returns (int256, uint8);
 }
 
 contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
@@ -62,7 +70,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 tokenId,
         uint256 quantity,
         address payToken,
-        uint256 unitPrice,
+        int256 unitPrice,
         uint256 pricePerItem
     );
     event ItemUpdated(
@@ -193,10 +201,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         } else {
             revert("invalid nft address");
         }
-        require(
-            _getNow() >= listedItem.startingTime,
-            "item not buyable"
-        );
+        require(_getNow() >= listedItem.startingTime, "item not buyable");
         _;
     }
 
@@ -255,10 +260,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) external notListed(_nftAddress, _tokenId, _msgSender()) {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
-            require(
-                nft.ownerOf(_tokenId) == _msgSender(),
-                "not owning item"
-            );
+            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
             require(
                 nft.isApprovedForAll(_msgSender(), address(this)),
                 "item not approved"
@@ -329,10 +331,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         ];
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
-            require(
-                nft.ownerOf(_tokenId) == _msgSender(),
-                "not owning item"
-            );
+            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
         } else if (
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
         ) {
@@ -348,7 +347,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(
             _payToken == address(0) ||
                 (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry()).enabled(_payToken)),
+                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
+                        .enabled(_payToken)),
             "invalid pay token"
         );
 
@@ -421,10 +421,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             (bool feeTransferSuccess, ) = feeReceipient.call{value: feeAmount}(
                 ""
             );
-            require(
-                feeTransferSuccess,
-                "fee transfer failed"
-            );
+            require(feeTransferSuccess, "fee transfer failed");
         } else {
             IERC20(_payToken).safeTransferFrom(
                 _msgSender(),
@@ -441,10 +438,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 (bool royaltyTransferSuccess, ) = payable(minter).call{
                     value: royaltyFee
                 }("");
-                require(
-                    royaltyTransferSuccess,
-                    "royalty fee transfer failed"
-                );
+                require(royaltyTransferSuccess, "royalty fee transfer failed");
             } else {
                 IERC20(_payToken).safeTransferFrom(
                     _msgSender(),
@@ -457,7 +451,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             minter = collectionRoyalties[_nftAddress].feeRecipient;
             royalty = collectionRoyalties[_nftAddress].royalty;
             if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
+                uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(
+                    10000
+                );
                 if (_payToken == address(0)) {
                     (bool royaltyTransferSuccess, ) = payable(minter).call{
                         value: royaltyFee
@@ -480,10 +476,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             (bool ownerTransferSuccess, ) = _owner.call{
                 value: price.sub(feeAmount)
             }("");
-            require(
-                ownerTransferSuccess,
-                "owner transfer failed"
-            );
+            require(ownerTransferSuccess, "owner transfer failed");
         } else {
             IERC20(_payToken).safeTransferFrom(
                 _msgSender(),
@@ -508,11 +501,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace()).validateItemSold(
-            _nftAddress,
-            _tokenId,
-            listedItem.quantity
-        );
+        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+            .validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
+
         emit ItemSold(
             _owner,
             _msgSender(),
@@ -520,7 +511,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             listedItem.quantity,
             _payToken,
-            0, // TODO: unitPrice
+            getPrice(_payToken),
             price.div(listedItem.quantity)
         );
         delete (listings[_nftAddress][_tokenId][_owner]);
@@ -550,7 +541,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(
             address(_payToken) == address(0) ||
                 (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry()).enabled(address(_payToken))),
+                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
+                        .enabled(address(_payToken))),
             "invalid pay token"
         );
 
@@ -595,10 +587,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Offer memory offer = offers[_nftAddress][_tokenId][_creator];
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
-            require(
-                nft.ownerOf(_tokenId) == _msgSender(),
-                "not owning item"
-            );
+            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
         } else if (
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
         ) {
@@ -653,7 +642,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace()).validateItemSold(_nftAddress, _tokenId, offer.quantity);
+        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+            .validateItemSold(_nftAddress, _tokenId, offer.quantity);
         delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
 
@@ -664,7 +654,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             offer.quantity,
             address(offer.payToken),
-            0, // TODO: unitPrice
+            getPrice(address(offer.payToken)),
             offer.pricePerItem
         );
         emit OfferCanceled(_creator, _nftAddress, _tokenId);
@@ -682,8 +672,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(_royalty <= 10000, "invalid royalty");
         require(
             addressRegistry.artion() == _nftAddress ||
-                IFantomNFTFactory(addressRegistry.factory()).exists(_nftAddress) ||
-                IFantomNFTFactory(addressRegistry.privateFactory()).exists(_nftAddress),
+                IFantomNFTFactory(addressRegistry.factory()).exists(
+                    _nftAddress
+                ) ||
+                IFantomNFTFactory(addressRegistry.privateFactory()).exists(
+                    _nftAddress
+                ),
             "invalid nft address"
         );
         require(
@@ -715,8 +709,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
         require(
             addressRegistry.artion() != _nftAddress &&
-                !IFantomNFTFactory(addressRegistry.factory()).exists(_nftAddress) &&
-                !IFantomNFTFactory(addressRegistry.privateFactory()).exists(_nftAddress),
+                !IFantomNFTFactory(addressRegistry.factory()).exists(
+                    _nftAddress
+                ) &&
+                !IFantomNFTFactory(addressRegistry.privateFactory()).exists(
+                    _nftAddress
+                ),
             "invalid nft address"
         );
         require(
@@ -728,6 +726,32 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _creator,
             _feeRecipient
         );
+    }
+
+    /**
+     @notice Method for getting price for pay token
+     @param _payToken Paying token
+     */
+    function getPrice(address _payToken) public view returns (int256) {
+        int256 unitPrice;
+        uint8 decimals;
+        if (_payToken == address(0)) {
+            IFantomPriceFeed priceFeed = IFantomPriceFeed(
+                addressRegistry.priceFeed()
+            );
+            (unitPrice, decimals) = priceFeed.getPrice(priceFeed.wFTM());
+        } else {
+            (unitPrice, decimals) = IFantomPriceFeed(
+                addressRegistry.priceFeed()
+            ).getPrice(_payToken);
+        }
+        if (decimals < 18) {
+            unitPrice = unitPrice * (int(10) ** (18 - decimals));
+        } else {
+            unitPrice = unitPrice / (int(10) ** (decimals - 18));
+        }
+
+        return unitPrice;
     }
 
     /**

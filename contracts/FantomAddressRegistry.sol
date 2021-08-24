@@ -29,6 +29,9 @@ contract FantomAddressRegistry is Ownable {
     /// @notice FantomTokenRegistry contract
     address public tokenRegistry;
 
+    /// @notice FantomPriceFeed contract
+    address public priceFeed;
+
     /**
      @notice Update artion contract
      @dev Only admin
@@ -61,7 +64,10 @@ contract FantomAddressRegistry is Ownable {
      @notice Update FantomBundleMarketplace contract
      @dev Only admin
      */
-    function updateBundleMarketplace(address _bundleMarketplace) external onlyOwner {
+    function updateBundleMarketplace(address _bundleMarketplace)
+        external
+        onlyOwner
+    {
         bundleMarketplace = _bundleMarketplace;
     }
 
@@ -77,7 +83,10 @@ contract FantomAddressRegistry is Ownable {
      @notice Update FantomNFTFactoryPrivate contract
      @dev Only admin
      */
-    function updateNFTFactoryPrivate(address _privateFactory) external onlyOwner {
+    function updateNFTFactoryPrivate(address _privateFactory)
+        external
+        onlyOwner
+    {
         privateFactory = _privateFactory;
     }
 
@@ -87,5 +96,13 @@ contract FantomAddressRegistry is Ownable {
      */
     function updateTokenRegistry(address _tokenRegistry) external onlyOwner {
         tokenRegistry = _tokenRegistry;
+    }
+
+    /**
+     @notice Update price feed contract
+     @dev Only admin
+     */
+    function updatePriceFeed(address _priceFeed) external onlyOwner {
+        priceFeed = _priceFeed;
     }
 }

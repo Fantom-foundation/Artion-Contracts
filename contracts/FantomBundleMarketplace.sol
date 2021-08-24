@@ -29,7 +29,7 @@ interface IFantomMarketplace {
         address
     ) external;
 
-    function tokenRegistry() external returns (address);
+    function getPrice(address) external view returns (int256);
 }
 
 interface IFantomTokenRegistry {
@@ -58,7 +58,7 @@ contract FantomBundleMarketplace is
         address indexed buyer,
         string bundleID,
         address payToken,
-        uint256 unitPrice,
+        int256 unitPrice,
         uint256 price
     );
     event ItemUpdated(
@@ -419,7 +419,7 @@ contract FantomBundleMarketplace is
             _msgSender(),
             _bundleID,
             _payToken,
-            0, // TODO: unitPrice
+            IFantomMarketplace(addressRegistry.marketplace()).getPrice(_payToken),
             price
         );
         emit OfferCanceled(_msgSender(), _bundleID);
@@ -522,7 +522,7 @@ contract FantomBundleMarketplace is
             _creator,
             _bundleID,
             address(offer.payToken),
-            0, // TODO: unitPrice
+            IFantomMarketplace(addressRegistry.marketplace()).getPrice(address(offer.payToken)),
             offer.price
         );
         emit OfferCanceled(_creator, _bundleID);

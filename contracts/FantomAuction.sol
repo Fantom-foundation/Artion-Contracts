@@ -33,6 +33,8 @@ interface IFantomMarketplace {
             address,
             address
         );
+
+    function getPrice(address) external view returns (int256);
 }
 
 interface IFantomBundleMarketplace {
@@ -119,7 +121,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 indexed tokenId,
         address indexed winner,
         address payToken,
-        uint256 unitPrice,
+        int256 unitPrice,
         uint256 winningBid
     );
 
@@ -555,7 +557,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             winner,
             auction.payToken,
-            0, // TODO: unitPrice
+            IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken),
             winningBid
         );
     }
