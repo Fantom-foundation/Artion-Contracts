@@ -95,6 +95,10 @@ contract FantomArtTradable is
         creators[_id] = msg.sender;
         _setTokenURI(_id, _uri);
 
+        if (bytes(_uri).length > 0) {
+            emit URI(_uri, _id);
+        }
+
         _mint(_to, _id, _supply, bytes(""));
         tokenSupply[_id] = _supply;
 

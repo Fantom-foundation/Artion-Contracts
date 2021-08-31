@@ -4,16 +4,16 @@ const {
 } = require('./constants');
 
 async function main() {
-  // const Factory = await ethers.getContractFactory('FantomArtFactory')
-  // const factory = await Factory.deploy(
-  //   '0x19fD7C9B72cd944f987E0aB1FdD33fF8f68Cf87C',
-  //   '0x0EeB6B95B52dfDFb86CcF960F8408a211555b63b',
-  //   '20000000000000000000',
-  //   TREASURY_ADDRESS,
-  //   '50000000000000000000',
-  // );
-  // await factory.deployed();
-  // console.log('FantomArtFactory deployed to:', factory.address);
+  const Factory = await ethers.getContractFactory('FantomArtFactory')
+  const factory = await Factory.deploy(
+    '0x19fD7C9B72cd944f987E0aB1FdD33fF8f68Cf87C',
+    '0x0EeB6B95B52dfDFb86CcF960F8408a211555b63b',
+    '20000000000000000000',
+    TREASURY_ADDRESS,
+    '10000000000000000000',
+  );
+  await factory.deployed();
+  console.log('FantomArtFactory deployed to:', factory.address);
 
   const PrivateFactory = await ethers.getContractFactory('FantomArtFactoryPrivate')
   const privateFactory = await PrivateFactory.deploy(
@@ -21,7 +21,7 @@ async function main() {
     '0x0EeB6B95B52dfDFb86CcF960F8408a211555b63b',
     '20000000000000000000',
     TREASURY_ADDRESS,
-    '50000000000000000000',
+    '10000000000000000000',
   );
   await privateFactory.deployed();
   console.log('FantomArtFactoryPrivate deployed to:', privateFactory.address);
