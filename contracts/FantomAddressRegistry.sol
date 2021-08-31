@@ -26,6 +26,12 @@ contract FantomAddressRegistry is Ownable {
     /// @notice FantomNFTFactoryPrivate contract
     address public privateFactory;
 
+    /// @notice FantomArtFactory contract
+    address public artFactory;
+
+    /// @notice FantomArtFactoryPrivate contract
+    address public privateArtFactory;
+
     /// @notice FantomTokenRegistry contract
     address public tokenRegistry;
 
@@ -88,6 +94,25 @@ contract FantomAddressRegistry is Ownable {
         onlyOwner
     {
         privateFactory = _privateFactory;
+    }
+
+    /**
+     @notice Update FantomArtFactory contract
+     @dev Only admin
+     */
+    function updateArtFactory(address _artFactory) external onlyOwner {
+        artFactory = _artFactory;
+    }
+
+    /**
+     @notice Update FantomArtFactoryPrivate contract
+     @dev Only admin
+     */
+    function updateArtFactoryPrivate(address _privateArtFactory)
+        external
+        onlyOwner
+    {
+        privateArtFactory = _privateArtFactory;
     }
 
     /**

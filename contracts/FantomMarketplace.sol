@@ -21,6 +21,10 @@ interface IFantomAddressRegistry {
 
     function privateFactory() external view returns (address);
 
+    function artFactory() external view returns (address);
+
+    function privateArtFactory() external view returns (address);
+
     function tokenRegistry() external view returns (address);
 
     function priceFeed() external view returns (address);
@@ -670,20 +674,20 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint16 _royalty
     ) external {
         require(_royalty <= 10000, "invalid royalty");
-        require(
-            addressRegistry.artion() == _nftAddress ||
-                IFantomNFTFactory(addressRegistry.factory()).exists(
-                    _nftAddress
-                ) ||
-                IFantomNFTFactory(addressRegistry.privateFactory()).exists(
-                    _nftAddress
-                ),
-            "invalid nft address"
-        );
-        require(
-            IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender(),
-            "not owning item"
-        );
+        require(_isFantomNFT(_nftAddress), "invalid nft address");
+        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
+            IERC721 nft = IERC721(_nftAddress);
+            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
+        } else if (
+            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
+        ) {
+            IERC1155 nft = IERC1155(_nftAddress);
+            require(
+                nft.balanceOf(_msgSender(), _tokenId) > 0,
+                "not owning item"
+            );
+        }
+
         require(
             minters[_nftAddress][_tokenId] == address(0),
             "royalty already set"
@@ -707,16 +711,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _royalty == 0 || _feeRecipient != address(0),
             "invalid fee recipient address"
         );
-        require(
-            addressRegistry.artion() != _nftAddress &&
-                !IFantomNFTFactory(addressRegistry.factory()).exists(
-                    _nftAddress
-                ) &&
-                !IFantomNFTFactory(addressRegistry.privateFactory()).exists(
-                    _nftAddress
-                ),
-            "invalid nft address"
-        );
+        require(!_isFantomNFT(_nftAddress), "invalid nft address");
         require(
             collectionRoyalties[_nftAddress].creator == address(0),
             "royalty already set"
@@ -726,6 +721,21 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _creator,
             _feeRecipient
         );
+    }
+
+    function _isFantomNFT(address _nftAddress) internal view returns (bool) {
+        return
+            addressRegistry.artion() == _nftAddress ||
+            IFantomNFTFactory(addressRegistry.factory()).exists(_nftAddress) ||
+            IFantomNFTFactory(addressRegistry.privateFactory()).exists(
+                _nftAddress
+            ) ||
+            IFantomNFTFactory(addressRegistry.artFactory()).exists(
+                _nftAddress
+            ) ||
+            IFantomNFTFactory(addressRegistry.privateArtFactory()).exists(
+                _nftAddress
+            );
     }
 
     /**
@@ -746,9 +756,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             ).getPrice(_payToken);
         }
         if (decimals < 18) {
-            unitPrice = unitPrice * (int(10) ** (18 - decimals));
+            unitPrice = unitPrice * (int256(10)**(18 - decimals));
         } else {
-            unitPrice = unitPrice / (int(10) ** (decimals - 18));
+            unitPrice = unitPrice / (int256(10)**(decimals - 18));
         }
 
         return unitPrice;
