@@ -12,7 +12,16 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-interface IFantomAddressRegistry {
+import "./interface/IFantomAddressRegistry.sol";
+import "./interface/IFantomBundleMarketplace.sol";
+import "./interface/IFantomNFTFactory.sol";
+import "./interface/IFantomTokenRegistry.sol";
+import "./interface/IFantomPriceFeed.sol";
+import "./interface/IFantomListingMarketplace.sol";
+import "./interface/IFantomOfferMarketplace.sol";
+
+
+/*interface IFantomAddressRegistry {
     function artion() external view returns (address);
 
     function bundleMarketplace() external view returns (address);
@@ -28,29 +37,29 @@ interface IFantomAddressRegistry {
     function tokenRegistry() external view returns (address);
 
     function priceFeed() external view returns (address);
-}
+}*/
 
-interface IFantomBundleMarketplace {
+/*interface IFantomBundleMarketplace {
     function validateItemSold(
         address,
         uint256,
         uint256
     ) external;
-}
+}*/
 
-interface IFantomNFTFactory {
+/*interface IFantomNFTFactory {
     function exists(address) external view returns (bool);
-}
+}*/
 
-interface IFantomTokenRegistry {
+/*interface IFantomTokenRegistry {
     function enabled(address) external view returns (bool);
-}
+}*/
 
-interface IFantomPriceFeed {
+/*interface IFantomPriceFeed {
     function wFTM() external view returns (address);
 
     function getPrice(address) external view returns (int256, uint8);
-}
+}*/
 
 contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
@@ -58,7 +67,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Events for the contract
-    event ItemListed(
+    /*event ItemListed(
         address indexed owner,
         address indexed nft,
         uint256 tokenId,
@@ -66,7 +75,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address payToken,
         uint256 pricePerItem,
         uint256 startingTime
-    );
+    );*/
     event ItemSold(
         address indexed seller,
         address indexed buyer,
@@ -77,19 +86,19 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         int256 unitPrice,
         uint256 pricePerItem
     );
-    event ItemUpdated(
+   /* event ItemUpdated(
         address indexed owner,
         address indexed nft,
         uint256 tokenId,
         address payToken,
         uint256 newPrice
-    );
-    event ItemCanceled(
+    );*/
+    /*event ItemCanceled(
         address indexed owner,
         address indexed nft,
         uint256 tokenId
-    );
-    event OfferCreated(
+    );*/
+    /*event OfferCreated(
         address indexed creator,
         address indexed nft,
         uint256 tokenId,
@@ -97,14 +106,14 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address payToken,
         uint256 pricePerItem,
         uint256 deadline
-    );
-    event OfferCanceled(
+    );*/
+    /*event OfferCanceled(
         address indexed creator,
         address indexed nft,
         uint256 tokenId
-    );
-    event UpdatePlatformFee(uint16 platformFee);
-    event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
+    );*/
+    //event UpdatePlatformFee(uint16 platformFee);
+    //event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
     /// @notice Structure for listed items
     struct Listing {
@@ -115,12 +124,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /// @notice Structure for offer
-    struct Offer {
+    /*struct Offer {
         IERC20 payToken;
         uint256 quantity;
         uint256 pricePerItem;
         uint256 deadline;
-    }
+    }*/
 
     struct CollectionRoyalty {
         uint16 royalty;
@@ -138,12 +147,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => uint16)) public royalties;
 
     /// @notice NftAddress -> Token ID -> Owner -> Listing item
-    mapping(address => mapping(uint256 => mapping(address => Listing)))
-        public listings;
+    /*mapping(address => mapping(uint256 => mapping(address => Listing)))
+        public listings;*/
 
     /// @notice NftAddress -> Token ID -> Offerer -> Offer
-    mapping(address => mapping(uint256 => mapping(address => Offer)))
-        public offers;
+    /*mapping(address => mapping(uint256 => mapping(address => Offer)))
+        public offers;*/
 
     /// @notice Platform fee
     uint16 public platformFee;
@@ -156,6 +165,19 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Address registry
     IFantomAddressRegistry public addressRegistry;
+
+    /// @notice FantomOfferMarketplace Address
+    address public fantomOfferMarketplaceAddress;
+
+    /// @notice FantomMarketplace
+    IFantomOfferMarketplace public fantomOfferMarketplace;
+
+    /// @notice FantomListingMarketplace Address
+    //address public fantomListingMarketplaceAddress;
+
+    /// @notice FantomMarketplace
+    IFantomListingMarketplace public fantomListingMarketplace;
+
 
     modifier onlyMarketplace() {
         require(
@@ -170,12 +192,20 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _tokenId,
         address _owner
     ) {
-        Listing memory listing = listings[_nftAddress][_tokenId][_owner];
-        require(listing.quantity > 0, "not listed item");
+        //replace with a function call from FantomListingMarketplace
+        //Listing memory listing = listings[_nftAddress][_tokenId][_owner];
+        (uint256 quantity, , , ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _owner);
+        // replace with local quantity
+        //require(listing.quantity > 0, "not listed item");
+        require(quantity > 0, "not listed item");
         _;
     }
 
-    modifier notListed(
+    modifier onlyFantomOfferMarketplace(){
+        require(_msgSender() == fantomOfferMarketplaceAddress, "not called by FantomOfferMarketplace");
+        _;
+    }
+    /*modifier notListed(
         address _nftAddress,
         uint256 _tokenId,
         address _owner
@@ -183,14 +213,16 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Listing memory listing = listings[_nftAddress][_tokenId][_owner];
         require(listing.quantity == 0, "already listed");
         _;
-    }
+    }*/
 
     modifier validListing(
         address _nftAddress,
         uint256 _tokenId,
         address _owner
     ) {
-        Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        //replace with a function call from FantomListingMarketplace
+        // Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        (uint256 quantity, , , uint256 startingTime ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _owner);
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _owner, "not owning item");
@@ -199,17 +231,21 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         ) {
             IERC1155 nft = IERC1155(_nftAddress);
             require(
-                nft.balanceOf(_owner, _tokenId) >= listedItem.quantity,
+                // replace with local quantity 
+                //nft.balanceOf(_owner, _tokenId) >= listedItem.quantity,
+                nft.balanceOf(_owner, _tokenId) >= quantity,                
                 "not owning item"
             );
         } else {
             revert("invalid nft address");
         }
-        require(_getNow() >= listedItem.startingTime, "item not buyable");
+        // replace with local startingTime
+        //require(_getNow() >= listedItem.startingTime, "item not buyable");
+        require(_getNow() >= startingTime, "item not buyable");
         _;
     }
 
-    modifier offerExists(
+    /*modifier offerExists(
         address _nftAddress,
         uint256 _tokenId,
         address _creator
@@ -220,9 +256,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "offer not exists or expired"
         );
         _;
-    }
+    }*/
 
-    modifier offerNotExists(
+    /*modifier offerNotExists(
         address _nftAddress,
         uint256 _tokenId,
         address _creator
@@ -233,15 +269,21 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "offer already created"
         );
         _;
-    }
+    }*/
 
     /// @notice Contract initializer
-    function initialize(address payable _feeRecipient, uint16 _platformFee)
+    function initialize(address payable _feeRecipient, uint16 _platformFee, address _fantomOfferMarketplaceAddress, address _fantomListingMarketplaceAddress)
         public
         initializer
     {
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
+
+        fantomOfferMarketplaceAddress = _fantomOfferMarketplaceAddress;
+        fantomOfferMarketplace = IFantomOfferMarketplace(_fantomOfferMarketplaceAddress);
+
+        //fantomListingMarketplaceAddress = _fantomListingMarketplaceAddress;
+        fantomListingMarketplace = IFantomListingMarketplace(_fantomListingMarketplaceAddress);
 
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -254,7 +296,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param _payToken Paying token
     /// @param _pricePerItem sale price for each iteam
     /// @param _startingTime scheduling for a future sale
-    function listItem(
+    // refactor
+    /*function listItem(
         address _nftAddress,
         uint256 _tokenId,
         uint256 _quantity,
@@ -308,23 +351,23 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _pricePerItem,
             _startingTime
         );
-    }
+    }*/
 
     /// @notice Method for canceling listed NFT
-    function cancelListing(address _nftAddress, uint256 _tokenId)
+    /*function cancelListing(address _nftAddress, uint256 _tokenId)
         external
         nonReentrant
         isListed(_nftAddress, _tokenId, _msgSender())
     {
         _cancelListing(_nftAddress, _tokenId, _msgSender());
-    }
+    }*/
 
     /// @notice Method for updating listed NFT
     /// @param _nftAddress Address of NFT contract
     /// @param _tokenId Token ID of NFT
     /// @param _payToken payment token
     /// @param _newPrice New sale price for each iteam
-    function updateListing(
+    /*function updateListing(
         address _nftAddress,
         uint256 _tokenId,
         address _payToken,
@@ -365,7 +408,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _payToken,
             _newPrice
         );
-    }
+    }*/
 
     /// @notice Method for buying listed NFT
     /// @param _nftAddress NFT contract address
@@ -381,10 +424,17 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         isListed(_nftAddress, _tokenId, _owner)
         validListing(_nftAddress, _tokenId, _owner)
     {
-        Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        // replace with a function call from FantomListingMarketingplace
+        //Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        Listing memory listedItem;
+        (listedItem.quantity, listedItem.payToken, listedItem.pricePerItem, ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _owner);
+        // replace with local payToken
         require(listedItem.payToken == address(0), "invalid pay token");
+        //*require(payToken == address(0), "invalid pay token");
+        // replace with local pricePerItem, quantity        
         require(
             msg.value >= listedItem.pricePerItem.mul(listedItem.quantity),
+            //*msg.value >= pricePerItem.mul(quantity),
             "insufficient balance to buy"
         );
 
@@ -394,6 +444,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice Method for buying listed NFT
     /// @param _nftAddress NFT contract address
     /// @param _tokenId TokenId
+    /// refactor
     function buyItem(
         address _nftAddress,
         uint256 _tokenId,
@@ -405,8 +456,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         isListed(_nftAddress, _tokenId, _owner)
         validListing(_nftAddress, _tokenId, _owner)
     {
-        Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-        require(listedItem.payToken == _payToken, "invalid pay token");
+        // replace with a function call from FantomListingMarketplace
+        //Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        (, address payToken, , ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _owner);
+        // replace with local payToken
+        //require(listedItem.payToken == _payToken, "invalid pay token");
+        require(payToken == _payToken, "invalid pay token");
 
         _buyItem(_nftAddress, _tokenId, _payToken, _owner);
     }
@@ -417,8 +472,10 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _payToken,
         address _owner
     ) private {
-        Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-
+        // replace with a function call from FantomListingMarketplace
+        //Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
+        Listing memory listedItem;
+        (listedItem.quantity, listedItem.payToken, listedItem.pricePerItem, ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _owner);
         uint256 price = listedItem.pricePerItem.mul(listedItem.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
         if (_payToken == address(0)) {
@@ -515,10 +572,13 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             listedItem.quantity,
             _payToken,
-            getPrice(_payToken),
+            //getPrice(_payToken),
+            fantomListingMarketplace.getPrice(_payToken),
             price.div(listedItem.quantity)
         );
-        delete (listings[_nftAddress][_tokenId][_owner]);
+        // replace with a function call from FantomListingMarketplace
+        //delete (listings[_nftAddress][_tokenId][_owner]);
+        fantomListingMarketplace.deleteListing(_nftAddress, _tokenId, _owner);
     }
 
     /// @notice Method for offering item
@@ -528,7 +588,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param _quantity Quantity of items
     /// @param _pricePerItem Price per item
     /// @param _deadline Offer expiration
-    function createOffer(
+    /*function createOffer(
         address _nftAddress,
         uint256 _tokenId,
         IERC20 _payToken,
@@ -566,24 +626,24 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _pricePerItem,
             _deadline
         );
-    }
+    }*/
 
     /// @notice Method for canceling the offer
     /// @param _nftAddress NFT contract address
     /// @param _tokenId TokenId
-    function cancelOffer(address _nftAddress, uint256 _tokenId)
+    /*function cancelOffer(address _nftAddress, uint256 _tokenId)
         external
         offerExists(_nftAddress, _tokenId, _msgSender())
     {
         delete (offers[_nftAddress][_tokenId][_msgSender()]);
         emit OfferCanceled(_msgSender(), _nftAddress, _tokenId);
-    }
+    }*/
 
     /// @notice Method for accepting the offer
     /// @param _nftAddress NFT contract address
     /// @param _tokenId TokenId
     /// @param _creator Offer creator address
-    function acceptOffer(
+    /*function acceptOffer(
         address _nftAddress,
         uint256 _tokenId,
         address _creator
@@ -609,8 +669,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 royaltyFee;
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
-        address minter = minters[_nftAddress][_tokenId];
-        uint16 royalty = royalties[_nftAddress][_tokenId];
+        //refactor
+        //address minter = minters[_nftAddress][_tokenId];
+        address minter;
+        //refactor
+        //uint16 royalty = royalties[_nftAddress][_tokenId];
+        uint16 royalty;        
         if (minter != address(0) && royalty != 0) {
             royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
             offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
@@ -648,9 +712,11 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, offer.quantity);
-        delete (listings[_nftAddress][_tokenId][_msgSender()]);
+        // todo: replace with function call from FantomListingMarketplace
+        //delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
 
+        //refactor
         emit ItemSold(
             _msgSender(),
             _creator,
@@ -658,11 +724,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             offer.quantity,
             address(offer.payToken),
-            getPrice(address(offer.payToken)),
+            //getPrice(address(offer.payToken)), refactor
+            0,  // refactor
             offer.pricePerItem
         );
         emit OfferCanceled(_creator, _nftAddress, _tokenId);
-    }
+    }*/
 
     /// @notice Method for setting royalty
     /// @param _nftAddress NFT contract address
@@ -742,8 +809,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      @notice Method for getting price for pay token
      @param _payToken Paying token
      */
-    function getPrice(address _payToken) public view returns (int256) {
-        int256 unitPrice;
+    /*function getPrice(address _payToken) public view returns (int256) {
+       int256 unitPrice;
         uint8 decimals;
         if (_payToken == address(0)) {
             IFantomPriceFeed priceFeed = IFantomPriceFeed(
@@ -762,7 +829,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
 
         return unitPrice;
-    }
+    }*/
 
     /**
      @notice Method for updating platform fee
@@ -771,7 +838,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function updatePlatformFee(uint16 _platformFee) external onlyOwner {
         platformFee = _platformFee;
-        emit UpdatePlatformFee(_platformFee);
+        //emit UpdatePlatformFee(_platformFee);
     }
 
     /**
@@ -784,7 +851,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         onlyOwner
     {
         feeReceipient = _platformFeeRecipient;
-        emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
+        //emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
     /**
@@ -805,12 +872,45 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _seller,
         address _buyer
     ) external onlyMarketplace {
-        Listing memory item = listings[_nftAddress][_tokenId][_seller];
-        if (item.quantity > 0) {
-            _cancelListing(_nftAddress, _tokenId, _seller);
+        // replace with a function call from FantomListingMarketplace
+        //Listing memory item = listings[_nftAddress][_tokenId][_seller];
+        (uint256 quantity, , , ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _seller);
+        // replace with local quantity
+        //if (item.quantity > 0) {
+        if (quantity > 0) {
+            // replace with a function call from FantomListingMarketplace
+            //_cancelListing(_nftAddress, _tokenId, _seller);
+            fantomListingMarketplace.cancelListing(_nftAddress, _tokenId, _seller);
         }
-        delete (offers[_nftAddress][_tokenId][_buyer]);
-        emit OfferCanceled(_buyer, _nftAddress, _tokenId);
+        //replace with a function call from FantomOfferMarketplace
+        //delete (offers[_nftAddress][_tokenId][_buyer]);
+        fantomOfferMarketplace.deleteOffer(_nftAddress, _tokenId, _buyer);
+
+        // replace with a function call from FantomOfferMarketplace
+        //emit OfferCanceled(_buyer, _nftAddress, _tokenId);
+        fantomOfferMarketplace.emitOfferCanceledEvent(_buyer, _nftAddress, _tokenId);
+    }
+
+    function emitItemSoldEvent(
+                            address seller,
+                            address buyer,
+                            address nft,
+                            uint256 tokenId,
+                            uint256 quantity,
+                            address payToken,
+                            uint256 pricePerItem
+    ) external onlyFantomOfferMarketplace {
+        emit ItemSold(
+            seller,
+            buyer,
+            nft,
+            tokenId,
+            quantity,
+            payToken,
+            //getPrice(payToken),
+            fantomListingMarketplace.getPrice(payToken),
+            pricePerItem
+        );
     }
 
     ////////////////////////////
@@ -821,7 +921,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         return block.timestamp;
     }
 
-    function _cancelListing(
+    /*function _cancelListing(
         address _nftAddress,
         uint256 _tokenId,
         address _owner
@@ -844,5 +944,5 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         delete (listings[_nftAddress][_tokenId][_owner]);
         emit ItemCanceled(_owner, _nftAddress, _tokenId);
-    }
+    }*/
 }

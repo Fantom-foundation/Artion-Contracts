@@ -9,5 +9,16 @@ interface IFantomAddressRegistry {
 
     function bundleMarketplace() external view returns (address);
 
+    function factory() external view returns (address);
+
+    function privateFactory() external view returns (address);
+
+    function artFactory() external view returns (address);
+
+    function privateArtFactory() external view returns (address);
+
     function tokenRegistry() external view returns (address);
+
+    function priceFeed() external view returns (address);
+
 }
