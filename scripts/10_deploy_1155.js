@@ -11,7 +11,7 @@ async function main() {
     '0x0EeB6B95B52dfDFb86CcF960F8408a211555b63b'
   );
   await nft.deployed();
-  console.log('FantomArt deployed to:', nft.address);
+  console.log('FantomArtTradable deployed to:', nft.address);
 
   const ArtTradablePrivate = await ethers.getContractFactory(
     'FantomArtTradablePrivate'
@@ -25,7 +25,7 @@ async function main() {
     '0x0EeB6B95B52dfDFb86CcF960F8408a211555b63b'
   );
   await nftPrivate.deployed();
-  console.log('FantomArt deployed to:', nftPrivate.address);
+  console.log('FantomArtTradablePrivate deployed to:', nftPrivate.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

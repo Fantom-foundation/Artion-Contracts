@@ -27,7 +27,7 @@ async function main() {
     TREASURY_ADDRESS
   );
   await nftPrivate.deployed();
-  console.log('IArtion deployed to:', nftPrivate.address);
+  console.log('FantomNFTTradablePrivate deployed to:', nftPrivate.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
