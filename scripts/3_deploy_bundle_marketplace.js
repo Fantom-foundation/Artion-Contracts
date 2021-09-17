@@ -1,35 +1,53 @@
 const {
   TREASURY_ADDRESS,
   PLATFORM_FEE,
+  PROXY_ADDRESS_TESTNET
 } = require('./constants');
 
 async function main() {
-  const Marketplace = await ethers.getContractFactory('FantomBundleMarketplace')
+  const Marketplace = await ethers.getContractFactory(
+    'FantomBundleMarketplace'
+  );
   const marketplaceImpl = await Marketplace.deploy();
   await marketplaceImpl.deployed();
-  console.log("Bundle Marketplace deployed to:", marketplaceImpl.address);
+  console.log('FantomBundleMarketplace deployed to:', marketplaceImpl.address);
 
-  // const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
-  // mainnet
-  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xde13797eC0C654bFF3B10896b176F2c901a84022', []);
-  // testnet
-  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(marketplaceImpl.address, '0xF6eD2c50fcEF4FDe67f2819a4Cd8af282733B25a', []);
-  // await marketplaceProxy.deployed();
-  // console.log("Bundle Marketplace Proxy deployed at ", marketplaceProxy.address);
+  const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory(
+    'AdminUpgradeabilityProxy'
+  );
 
-  // const marketplace = await ethers.getContractAt("FantomBundleMarketplace", marktplaeceProxy.address);
-  // await marketplace.initialize(
-  //   TREASURY_ADDRESS,
-  //   PLATFORM_FEE
+  // Mainnet
+  // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
+  //   marketplaceImpl.address,
+  //   PROXY_ADDRESS_MAINNET,
+  //   []
   // );
-  // console.log("Bundle Marketplace Proxy initialized");
+
+  // Testnet
+  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
+    marketplaceImpl.address,
+    PROXY_ADDRESS_TESTNET,
+    []
+  );
+  await marketplaceProxy.deployed();
+  console.log(
+    'Bundle Marketplace Proxy deployed at ',
+    marketplaceProxy.address
+  );
+
+  const marketplace = await ethers.getContractAt(
+    'FantomBundleMarketplace',
+    marketplaceProxy.address
+  );
+  await marketplace.initialize(TREASURY_ADDRESS, PLATFORM_FEE);
+  console.log('Bundle Marketplace Proxy initialized');
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main()
-.then(() => process.exit(0))
-.catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
