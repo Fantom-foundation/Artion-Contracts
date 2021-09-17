@@ -1,12 +1,10 @@
-const {
-  TREASURY_ADDRESS,
-} = require('./constants');
+const { TREASURY_ADDRESS } = require('./constants');
 
 async function main() {
-  const Auction = await ethers.getContractFactory('FantomAuction')
+  const Auction = await ethers.getContractFactory('FantomAuction');
   const auctionImpl = await Auction.deploy();
   await auctionImpl.deployed();
-  console.log('Auction deployed to:', auctionImpl.address);
+  console.log('FantomAuction deployed to:', auctionImpl.address);
 
   // const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory("AdminUpgradeabilityProxy");
   // mainnet
@@ -24,8 +22,8 @@ async function main() {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main()
-.then(() => process.exit(0))
-.catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
