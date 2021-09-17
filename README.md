@@ -1,1 +1,1 @@
-# fmarket-sc
+# Smart contracts for Fantom Artion Marketplace
