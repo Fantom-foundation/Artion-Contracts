@@ -19,18 +19,19 @@ async function main() {
   );
 
   // Mainnet
+  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
+    marketplaceImpl.address,
+    proxyAdmin.address, //ProxyAdmin
+    []
+  );
+
+  // // Testnet
   // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
   //   marketplaceImpl.address,
-  //   proxyAdmin.address, //ProxyAdmin
+  //   proxyAdmin.address,
   //   []
   // );
 
-  // Testnet
-  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
-    marketplaceImpl.address,
-    proxyAdmin.address,
-    []
-  );
   await marketplaceProxy.deployed();
   console.log('Marketplace Proxy deployed at ', marketplaceProxy.address);
 

@@ -1,4 +1,8 @@
-const { TREASURY_ADDRESS, PROXY_ADDRESS_TESTNET } = require('./constants');
+const {
+  TREASURY_ADDRESS,
+  PROXY_ADDRESS_TESTNET,
+  PROXY_ADDRESS_MAINNET
+} = require('./constants');
 
 async function main() {
   const Auction = await ethers.getContractFactory('FantomAuction');
@@ -11,18 +15,19 @@ async function main() {
   );
 
   // Mainnet
+  const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
+    auctionImpl.address,
+    PROXY_ADDRESS_MAINNET,
+    []
+  );
+
+  // Testnet
   // const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
   //   auctionImpl.address,
-  //   PROXY_ADDRESS_MAINNET,
+  //   PROXY_ADDRESS_TESTNET,
   //   []
   // );
 
-  // Testnet
-  const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
-    auctionImpl.address,
-    PROXY_ADDRESS_TESTNET,
-    []
-  );
   await auctionProxy.deployed();
   console.log('Auction Proxy deployed at ', auctionProxy.address);
 

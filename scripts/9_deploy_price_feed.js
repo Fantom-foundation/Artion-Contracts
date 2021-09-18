@@ -8,7 +8,7 @@ async function main() {
   const Contract = await ethers.getContractFactory('FantomPriceFeed');
   const contract = await Contract.deploy(
     FANTOM_ADDRESS_REGISTRY,
-    WRAPPED_FTM_TESTNET
+    WRAPPED_FTM_MAINNET
   );
 
   await contract.deployed();

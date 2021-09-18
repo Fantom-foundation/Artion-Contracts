@@ -1,7 +1,8 @@
 const {
   TREASURY_ADDRESS,
   PLATFORM_FEE,
-  PROXY_ADDRESS_TESTNET
+  PROXY_ADDRESS_TESTNET,
+  PROXY_ADDRESS_MAINNET
 } = require('./constants');
 
 async function main() {
@@ -17,18 +18,19 @@ async function main() {
   );
 
   // Mainnet
+  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
+    marketplaceImpl.address,
+    PROXY_ADDRESS_MAINNET,
+    []
+  );
+
+  // Testnet
   // const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
   //   marketplaceImpl.address,
-  //   PROXY_ADDRESS_MAINNET,
+  //   PROXY_ADDRESS_TESTNET,
   //   []
   // );
 
-  // Testnet
-  const marketplaceProxy = await AdminUpgradeabilityProxyFactory.deploy(
-    marketplaceImpl.address,
-    PROXY_ADDRESS_TESTNET,
-    []
-  );
   await marketplaceProxy.deployed();
   console.log(
     'Bundle Marketplace Proxy deployed at ',
