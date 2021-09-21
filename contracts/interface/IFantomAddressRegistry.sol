@@ -21,4 +21,6 @@ interface IFantomAddressRegistry {
 
     function priceFeed() external view returns (address);
 
+     function auction() external view returns (address);
+
 }

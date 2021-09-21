@@ -8,4 +8,33 @@ interface IFantomBundleMarketplace {
         uint256,
         uint256
     ) external;
+
+    function owners(bytes32 bundleID) external view returns (address);
+
+    function platformFee() external view returns(uint256);
+
+    function feeReceipient() external view returns(address);
+
+    function setBundleId(bytes32 bundleID, string memory _bundleID) external;
+
+    function addBundleIdPerItemAndSetNftIndex(address nft, uint256 tokenId, bytes32 bundleID, uint256 index) external;
+
+    function setOwner(bytes32 bundleID, address owner) external;
+
+    function removeBundleIdPerItem(address nft, uint256 tokenId, bytes32 bundleID) external;
+
+    function deleteNftIndex(bytes32 bundleID, address nft, uint256 tokenId) external;
+
+    function deleteOwner(bytes32 bundleID) external;
+
+    function deleteBundleId(bytes32 bundleID) external;
+
+    function emitItemSoldEvent(
+        address seller,
+        address buyer,
+        string memory bundleID,
+        address payToken,
+        int256 unitPrice,
+        uint256 price) external;
+
 }

@@ -30,4 +30,11 @@ interface IFantomMarketplace {
                             uint256 quantity,
                             address payToken,
                             uint256 pricePerItem) external;
+
+    function validateItemSold(
+                address _nftAddress,
+                uint256 _tokenId,
+                address _seller,
+                address _buyer
+            ) external ;
 }

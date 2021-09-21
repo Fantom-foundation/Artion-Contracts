@@ -13,15 +13,24 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-interface IFantomAddressRegistry {
+
+import "./interface/IFantomAddressRegistry.sol";
+import "./interface/IFantomMarketplace.sol";
+import "./interface/IFantomTokenRegistry.sol";
+import "./interface/IFantomListingBundleMarketplace.sol";
+import "./interface/IFantomOfferBundleMarketplace.sol";
+
+/* interface IFantomAddressRegistry {
     function auction() external view returns (address);
 
     function marketplace() external view returns (address);
 
     function tokenRegistry() external view returns (address);
 }
+ */
 
-interface IFantomMarketplace {
+
+/*interface IFantomMarketplace {
     function validateItemSold(
         address,
         uint256,
@@ -30,11 +39,11 @@ interface IFantomMarketplace {
     ) external;
 
     function getPrice(address) external view returns (int256);
-}
+}*/
 
-interface IFantomTokenRegistry {
+/*interface IFantomTokenRegistry {
     function enabled(address) external returns (bool);
-}
+}*/
 
 contract FantomBundleMarketplace is
     OwnableUpgradeable,
@@ -46,13 +55,13 @@ contract FantomBundleMarketplace is
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     /// @notice Events for the contract
-    event ItemListed(
+    /*event ItemListed(
         address indexed owner,
         string bundleID,
         address payToken,
         uint256 price,
         uint256 startingTime
-    );
+    );*/
     event ItemSold(
         address indexed seller,
         address indexed buyer,
@@ -61,7 +70,7 @@ contract FantomBundleMarketplace is
         int256 unitPrice,
         uint256 price
     );
-    event ItemUpdated(
+    /*event ItemUpdated(
         address indexed owner,
         string bundleID,
         address[] nft,
@@ -69,18 +78,18 @@ contract FantomBundleMarketplace is
         uint256[] quantity,
         address payToken,
         uint256 newPrice
-    );
-    event ItemCanceled(address indexed owner, string bundleID);
-    event OfferCreated(
+    );*/
+    /*event ItemCanceled(address indexed owner, string bundleID);*/
+    /*event OfferCreated(
         address indexed creator,
         string bundleID,
         address payToken,
         uint256 price,
         uint256 deadline
-    );
-    event OfferCanceled(address indexed creator, string bundleID);
-    event UpdatePlatformFee(uint256 platformFee);
-    event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
+    );*/
+    //event OfferCanceled(address indexed creator, string bundleID);
+    //event UpdatePlatformFee(uint256 platformFee);
+    //event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
     /// @notice Structure for Bundle Item Listing
     struct Listing {
@@ -92,18 +101,18 @@ contract FantomBundleMarketplace is
         uint256 startingTime;
     }
 
-    /// @notice Structure for bundle offer
-    struct Offer {
+    // @notice Structure for bundle offer
+    /*struct Offer {
         IERC20 payToken;
         uint256 price;
         uint256 deadline;
-    }
+    }*/
 
     bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
     /// @notice Owner -> Bundle ID -> Bundle Listing item
-    mapping(address => mapping(bytes32 => Listing)) public listings;
+    //mapping(address => mapping(bytes32 => Listing)) public listings;
 
     /// @notice Bundle ID -> Wwner
     mapping(bytes32 => address) public owners;
@@ -115,7 +124,7 @@ contract FantomBundleMarketplace is
     mapping(bytes32 => string) bundleIds;
 
     /// @notice Bundle ID -> Offerer -> Offer
-    mapping(bytes32 => mapping(address => Offer)) public offers;
+    //mapping(bytes32 => mapping(address => Offer)) public offers;
 
     /// @notice Platform fee
     uint256 public platformFee;
@@ -125,6 +134,19 @@ contract FantomBundleMarketplace is
 
     /// @notice Address registry
     IFantomAddressRegistry public addressRegistry;
+    
+    /// @notice FantomListingBundleMarketplace Address
+    address public fantomListingBundleMarketplaceAddress;
+
+    /// @notice FantomOfferBundleMarketplace Address
+    address public fantomOfferBundleMarketplaceAddress;
+
+    /// @notice FantomListingBundleMarketplace
+    IFantomListingBundleMarketplace public fantomListingBundleMarketplace;
+
+    /// @notice FantomListingBundleMarketplace
+    IFantomOfferBundleMarketplace public fantomOfferBundleMarketplace;
+
 
     modifier onlyContract() {
         require(
@@ -135,13 +157,28 @@ contract FantomBundleMarketplace is
         _;
     }
 
+    modifier onlyFantomListingOrOfferBundleMarketplace() {
+        require(_msgSender() == fantomListingBundleMarketplaceAddress || 
+            _msgSender() == fantomOfferBundleMarketplaceAddress
+            , "sender is not allowed");
+        _;
+    }
+
     /// @notice Contract initializer
-    function initialize(address payable _feeRecipient, uint256 _platformFee)
+    function initialize(address payable _feeRecipient, uint256 _platformFee, 
+                address _fantomListingBundleMarketplaceAddress,
+                address _fantomOfferBundleMarketplaceAddress)
         public
         initializer
     {
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
+
+        fantomListingBundleMarketplaceAddress = _fantomListingBundleMarketplaceAddress;
+        fantomListingBundleMarketplace = IFantomListingBundleMarketplace(_fantomListingBundleMarketplaceAddress);
+
+        fantomOfferBundleMarketplaceAddress = _fantomOfferBundleMarketplaceAddress;
+        fantomOfferBundleMarketplace = IFantomOfferBundleMarketplace(_fantomOfferBundleMarketplaceAddress);
 
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -150,7 +187,7 @@ contract FantomBundleMarketplace is
     /// @notice Method for get NFT bundle listing
     /// @param _owner Owner address
     /// @param _bundleID Bundle ID
-    function getListing(address _owner, string memory _bundleID)
+    /*function getListing(address _owner, string memory _bundleID)
         external
         view
         returns (
@@ -167,7 +204,7 @@ contract FantomBundleMarketplace is
         quantities = listings[_owner][bundleID].quantities;
         price = listings[_owner][bundleID].price;
         startingTime = listings[_owner][bundleID].startingTime;
-    }
+    }*/
 
     /// @notice Method for listing NFT bundle
     /// @param _bundleID Bundle ID
@@ -176,7 +213,7 @@ contract FantomBundleMarketplace is
     /// @param _quantities token amounts to list (needed for ERC-1155 NFTs, set as 1 for ERC-721)
     /// @param _price sale price for bundle
     /// @param _startingTime scheduling for a future sale
-    function listItem(
+    /*function listItem(
         string memory _bundleID,
         address[] calldata _nftAddresses,
         uint256[] calldata _tokenIds,
@@ -260,19 +297,19 @@ contract FantomBundleMarketplace is
             _price,
             _startingTime
         );
-    }
+    }*/
 
     /// @notice Method for canceling listed NFT bundle
-    function cancelListing(string memory _bundleID) external nonReentrant {
+    /*function cancelListing(string memory _bundleID) external nonReentrant {
         bytes32 bundleID = _getBundleID(_bundleID);
         require(listings[_msgSender()][bundleID].price > 0, "not listed");
         _cancelListing(_msgSender(), _bundleID);
-    }
+    }*/
 
     /// @notice Method for updating listed NFT bundle
     /// @param _bundleID Bundle ID
     /// @param _newPrice New sale price for bundle
-    function updateListing(
+    /*function updateListing(
         string memory _bundleID,
         address _payToken,
         uint256 _newPrice
@@ -300,18 +337,22 @@ contract FantomBundleMarketplace is
             _payToken,
             _newPrice
         );
-    }
+    }*/
 
     /// @notice Method for buying listed NFT bundle
     /// @param _bundleID Bundle ID
     function buyItem(string memory _bundleID) external payable nonReentrant {
-        bytes32 bundleID = _getBundleID(_bundleID);
+        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
         require(owner != address(0), "invalid id");
-
-        Listing memory listing = listings[owner][bundleID];
+        
+        //replace with local variables and a function call from FantomListingBundleMarketplace
+        /*Listing memory listing = listings[owner][bundleID];
         require(listing.payToken == address(0), "invalid pay token");
-        require(msg.value >= listing.price, "insufficient balance to buy");
+        require(msg.value >= listing.price, "insufficient balance to buy");*/
+        (, , ,address payToken, uint256 price,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        require(payToken == address(0), "invalid pay token");
+        require(msg.value >= price, "insufficient balance to buy");
 
         _buyItem(_bundleID, address(0));
     }
@@ -322,34 +363,44 @@ contract FantomBundleMarketplace is
         external
         nonReentrant
     {
-        bytes32 bundleID = _getBundleID(_bundleID);
+        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
         require(owner != address(0), "invalid id");
-
-        Listing memory listing = listings[owner][bundleID];
-        require(listing.payToken == _payToken, "invalid pay token");
+                
+        //replace with local variables and a function call from FantomListingBundleMarketplace        
+        /*Listing memory listing = listings[owner][bundleID];
+        require(listing.payToken == _payToken, "invalid pay token");*/
+        (, , ,address payToken, ,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        require(payToken == _payToken, "invalid pay token");
 
         _buyItem(_bundleID, _payToken);
     }
 
     function _buyItem(string memory _bundleID, address _payToken) private {
-        bytes32 bundleID = _getBundleID(_bundleID);
+        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
-        Listing memory listing = listings[owner][bundleID];
 
+        //replace local variables and function call from FantomListingBundleMarketplace
+        //Listing memory listing = listings[owner][bundleID];
+        Listing memory listing;
+        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(owner, bundleID);
         require(listing.price > 0, "not listed");
+
         for (uint256 i; i < listing.nfts.length; i++) {
-            if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
-                _check721Owning(listing.nfts[i], listing.tokenIds[i], owner);
-            } else if (
-                _supportsInterface(listing.nfts[i], INTERFACE_ID_ERC1155)
-            ) {
-                _check1155Owning(
+            //if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
+            if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC721)) {
+                //_check721Owning(listing.nfts[i], listing.tokenIds[i], owner);
+                require(IERC721(listing.nfts[i]).ownerOf(listing.tokenIds[i]) == owner,  "not owning item");
+            //} else if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC1155)) {
+            } else if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC1155)) {
+                  /* _check1155Owning(
                     listing.nfts[i],
                     listing.tokenIds[i],
                     listing.quantities[i],
                     owner
-                );
+                ); */
+                require(IERC1155(listing.nfts[i]).balanceOf(owner, listing.tokenIds[i]) >= listing.quantities[i], "not owning item");
+
             }
         }
         require(_getNow() >= listing.startingTime, "not buyable");
@@ -386,7 +437,8 @@ contract FantomBundleMarketplace is
 
         // Transfer NFT to buyer
         for (uint256 i; i < listing.nfts.length; i++) {
-            if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
+            //if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
+            if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC721)) {
                 IERC721(listing.nfts[i]).safeTransferFrom(
                     owner,
                     _msgSender(),
@@ -408,12 +460,25 @@ contract FantomBundleMarketplace is
                 _msgSender()
             );
         }
-        delete (listings[owner][bundleID]);
+        //replace with a function call from FantomListingBundleMarketplace
+        //delete (listings[owner][bundleID]);
+        fantomListingBundleMarketplace.deleteListing(owner, bundleID);
         listing.price = 0;
-        listings[_msgSender()][bundleID] = listing;
+        //replace with  a function call from FantomListingBundleMarketplace
+        //listings[_msgSender()][bundleID] = listing;
+        fantomListingBundleMarketplace.setListing(_msgSender(), bundleID,
+                            listing.nfts,
+                            listing.tokenIds,
+                            listing.quantities,
+                            listing.payToken,
+                            listing.price,
+                            listing.startingTime
+            );
         owners[bundleID] = _msgSender();
-        delete (offers[bundleID][_msgSender()]);
 
+        //replace with a function call from FantomOfferBundleMarketplace.sol
+        //delete (offers[bundleID][_msgSender()]);
+        fantomOfferBundleMarketplace.deleteOffer(bundleID, _msgSender());
         emit ItemSold(
             owner,
             _msgSender(),
@@ -422,7 +487,10 @@ contract FantomBundleMarketplace is
             IFantomMarketplace(addressRegistry.marketplace()).getPrice(_payToken),
             price
         );
-        emit OfferCanceled(_msgSender(), _bundleID);
+
+        //replace with a function  call from FantomOfferBundleMarketplace.sol
+        //emit OfferCanceled(_msgSender(), _bundleID);
+        fantomOfferBundleMarketplace.emitOfferCanceledEvent(_msgSender(), _bundleID);
     }
 
     /// @notice Method for offering bundle item
@@ -430,7 +498,7 @@ contract FantomBundleMarketplace is
     /// @param _payToken Paying token
     /// @param _price Price
     /// @param _deadline Offer expiration
-    function createOffer(
+    /*function createOffer(
         string memory _bundleID,
         IERC20 _payToken,
         uint256 _price,
@@ -453,20 +521,20 @@ contract FantomBundleMarketplace is
             _price,
             _deadline
         );
-    }
+    }*/
 
     /// @notice Method for canceling the offer
     /// @param _bundleID Bundle ID
-    function cancelOffer(string memory _bundleID) external {
+    /*function cancelOffer(string memory _bundleID) external {
         bytes32 bundleID = _getBundleID(_bundleID);
         Offer memory offer = offers[bundleID][_msgSender()];
         require(offer.deadline > _getNow(), "offer not exists or expired");
         delete (offers[bundleID][_msgSender()]);
         emit OfferCanceled(_msgSender(), _bundleID);
-    }
+    }*/
 
     /// @notice Method for accepting the offer
-    function acceptOffer(string memory _bundleID, address _creator)
+    /*function acceptOffer(string memory _bundleID, address _creator)
         external
         nonReentrant
     {
@@ -487,7 +555,10 @@ contract FantomBundleMarketplace is
         );
 
         // Transfer NFT to buyer
-        Listing memory listing = listings[_msgSender()][bundleID];
+        // replace with function calls from FantomListingBundleMarketplace
+        //Listing memory listing = listings[_msgSender()][bundleID];
+        Listing memory listing;
+        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_msgSender(), bundleID);
         for (uint256 i; i < listing.nfts.length; i++) {
             if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
                 IERC721(listing.nfts[i]).safeTransferFrom(
@@ -511,9 +582,13 @@ contract FantomBundleMarketplace is
                 _creator
             );
         }
-        delete (listings[_msgSender()][bundleID]);
+        // replace with a function call from FantomListingBundleMarketplace
+        //delete (listings[_msgSender()][bundleID]);
+        fantomListingBundleMarketplace.deleteListing(_msgSender(), bundleID);
         listing.price = 0;
-        listings[_creator][bundleID] = listing;
+        // replace with a function call from FantomListingBundleMarketplace        
+        //listings[_creator][bundleID] = listing;
+        fantomListingBundleMarketplace.setListing(_creator, bundleID, listing.nfts, listing.tokenIds, listing.quantities, listing.payToken, listing.price, listing.startingTime);
         owners[bundleID] = _creator;
         delete (offers[bundleID][_creator]);
 
@@ -526,7 +601,7 @@ contract FantomBundleMarketplace is
             offer.price
         );
         emit OfferCanceled(_creator, _bundleID);
-    }
+    }*/
 
     /**
      @notice Method for updating platform fee
@@ -535,7 +610,7 @@ contract FantomBundleMarketplace is
      */
     function updatePlatformFee(uint256 _platformFee) external onlyOwner {
         platformFee = _platformFee;
-        emit UpdatePlatformFee(_platformFee);
+        //emit UpdatePlatformFee(_platformFee);
     }
 
     /**
@@ -548,7 +623,7 @@ contract FantomBundleMarketplace is
         onlyOwner
     {
         feeReceipient = _platformFeeRecipient;
-        emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
+        //emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
     /**
@@ -568,25 +643,43 @@ contract FantomBundleMarketplace is
         uint256 _tokenId,
         uint256 _quantity
     ) external onlyContract {
+        
         uint256 length = bundleIdsPerItem[_nftAddress][_tokenId].length();
         for (uint256 i; i < length; i++) {
             bytes32 bundleID = bundleIdsPerItem[_nftAddress][_tokenId].at(i);
             address _owner = owners[bundleID];
             if (_owner != address(0)) {
-                Listing storage listing = listings[_owner][bundleID];
+                // replace with function calls from FantomListingBundleMarketplace.sol
+                //Listing storage listing = listings[_owner][bundleID];
+                Listing memory listing;
+                (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_owner, bundleID);
                 string memory _bundleID = bundleIds[bundleID];
                 uint256 index = nftIndexes[bundleID][_nftAddress][_tokenId];
                 if (listing.quantities[index] > _quantity) {
-                    listing.quantities[index] = listing.quantities[index].sub(
+                    //replace with  a function call from FantomListingBundleMarketplace.sol
+                    /*listing.quantities[index] = listing.quantities[index].sub(
                         _quantity
-                    );
+                    );*/
+                    fantomListingBundleMarketplace.subListingQuantity(owners[bundleID], bundleID, index, _quantity);
                 } else {
                     delete (nftIndexes[bundleID][_nftAddress][_tokenId]);
                     if (listing.nfts.length == 1) {
-                        delete (listings[_owner][bundleID]);
+                        //replace with a function call from FantomListingBundleMarketplace.sol
+                        //delete (listings[_owner][bundleID]);
+                        fantomListingBundleMarketplace.deleteListing(_owner, bundleID);
                         delete (owners[bundleID]);
                         delete (bundleIds[bundleID]);
-                        emit ItemUpdated(
+                        //replace with a function call from FantomListingBundleMarketplace.sol
+                        /*emit ItemUpdated(
+                            _owner,
+                            _bundleID,
+                            new address[](0),
+                            new uint256[](0),
+                            new uint256[](0),
+                            address(0),
+                            0
+                        );*/
+                        fantomListingBundleMarketplace.emitItemUpdatedEvent(
                             _owner,
                             _bundleID,
                             new address[](0),
@@ -598,7 +691,8 @@ contract FantomBundleMarketplace is
                         continue;
                     } else {
                         if (index < listing.nfts.length - 1) {
-                            listing.nfts[index] = listing.nfts[
+                            //replace with a function call from FantomListingBundleMarketplace.sol
+                            /*listing.nfts[index] = listing.nfts[
                                 listing.nfts.length - 1
                             ];
                             listing.tokenIds[index] = listing.tokenIds[
@@ -606,18 +700,28 @@ contract FantomBundleMarketplace is
                             ];
                             listing.quantities[index] = listing.quantities[
                                 listing.quantities.length - 1
-                            ];
-                            nftIndexes[bundleID][listing.nfts[index]][
-                                listing.tokenIds[index]
-                            ] = index;
+                            ];*/
+                            fantomListingBundleMarketplace.copyLastListingNftsTokenIdsQuantities(_owner, bundleID, index);
+                            nftIndexes[bundleID][listing.nfts[index]][listing.tokenIds[index]] = index;
                         }
-                        listing.nfts.pop();
+                        //replace with a function call from FantomListingBundleMarketplace
+                        /*listing.nfts.pop();
                         listing.tokenIds.pop();
-                        listing.quantities.pop();
+                        listing.quantities.pop();*/
+                        fantomListingBundleMarketplace.popListingNftsTokenIdsQuantities(_owner, bundleID);
                     }
                 }
-
-                emit ItemUpdated(
+                //replace with a function call from fantomListingBundleMarketplace
+                /*emit ItemUpdated(
+                    _owner,
+                    _bundleID,
+                    listing.nfts,
+                    listing.tokenIds,
+                    listing.quantities,
+                    listing.payToken,
+                    listing.price
+                );*/
+                fantomListingBundleMarketplace.emitItemUpdatedEvent(
                     _owner,
                     _bundleID,
                     listing.nfts,
@@ -632,26 +736,65 @@ contract FantomBundleMarketplace is
         delete (bundleIdsPerItem[_nftAddress][_tokenId]);
     }
 
+   function setBundleId(bytes32 bundleID, string memory _bundleID) external onlyFantomListingOrOfferBundleMarketplace{
+        bundleIds[bundleID] = _bundleID;
+    }
+
+    function addBundleIdPerItemAndSetNftIndex(address nft, uint256 tokenId, bytes32 bundleID, uint256 index) external onlyFantomListingOrOfferBundleMarketplace{
+        bundleIdsPerItem[nft][tokenId].add(bundleID);
+        nftIndexes[bundleID][nft][tokenId] = index;
+    }
+
+    function removeBundleIdPerItem(address nft, uint256 tokenId, bytes32 bundleID) external onlyFantomListingOrOfferBundleMarketplace{
+        bundleIdsPerItem[nft][tokenId].remove(bundleID);
+    }
+
+    function deleteNftIndex(bytes32 bundleID, address nft, uint256 tokenId) external onlyFantomListingOrOfferBundleMarketplace{
+        delete (nftIndexes[bundleID][nft][tokenId]);
+    }
+
+    function deleteOwner(bytes32 bundleID) external onlyFantomListingOrOfferBundleMarketplace{
+        delete (owners[bundleID]);
+    }
+
+    function setOwner(bytes32 bundleID, address owner) external onlyFantomListingOrOfferBundleMarketplace{
+        owners[bundleID] = owner;
+    }
+
+    function deleteBundleId(bytes32 bundleID) external onlyFantomListingOrOfferBundleMarketplace{
+        delete (bundleIds[bundleID]);
+    }
+
+    function emitItemSoldEvent(
+        address seller,
+        address buyer,
+        string memory bundleID,
+        address payToken,
+        int256 unitPrice,
+        uint256 price) external onlyFantomListingOrOfferBundleMarketplace{
+
+            emit ItemSold(seller, buyer, bundleID, payToken, unitPrice, price);
+    }
     ////////////////////////////
     /// Internal and Private ///
     ////////////////////////////
-    function _supportsInterface(address _addr, bytes4 iface)
+    /*function _supportsInterface(address _addr, bytes4 iface)
         internal
         view
         returns (bool)
     {
         return IERC165(_addr).supportsInterface(iface);
-    }
+    }*/
 
-    function _check721Owning(
+    /*function _check721Owning(
         address _nft,
         uint256 _tokenId,
         address _owner
     ) internal view {
         require(IERC721(_nft).ownerOf(_tokenId) == _owner, "not owning item");
-    }
+    }*/
 
-    function _check1155Owning(
+    /*function _check1155Owning(
         address _nft,
         uint256 _tokenId,
         uint256 _quantity,
@@ -661,13 +804,13 @@ contract FantomBundleMarketplace is
             IERC1155(_nft).balanceOf(_owner, _tokenId) >= _quantity,
             "not owning item"
         );
-    }
+    }*/
 
     function _getNow() internal view virtual returns (uint256) {
         return block.timestamp;
     }
 
-    function _cancelListing(address _owner, string memory _bundleID) private {
+    /*function _cancelListing(address _owner, string memory _bundleID) private {
         bytes32 bundleID = _getBundleID(_bundleID);
         Listing memory listing = listings[_owner][bundleID];
         for (uint256 i; i < listing.nfts.length; i++) {
@@ -680,13 +823,13 @@ contract FantomBundleMarketplace is
         delete (owners[bundleID]);
         delete (bundleIds[bundleID]);
         emit ItemCanceled(_owner, _bundleID);
-    }
+    }*/
 
-    function _getBundleID(string memory _bundleID)
+    /*function _getBundleID(string memory _bundleID)
         private
         pure
         returns (bytes32)
     {
         return keccak256(abi.encodePacked(_bundleID));
-    }
+    }*/
 }
