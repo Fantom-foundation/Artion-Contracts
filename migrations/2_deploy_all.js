@@ -8,7 +8,17 @@ const FantomOfferMarketplace = artifacts.require('FantomOfferMarketplace');
 const FantomBundleMarketplace = artifacts.require('FantomBundleMarketplace');
 const FantomListingBundleMarketplace = artifacts.require('FantomListingBundleMarketplace');
 const FantomOfferBundleMarketplace = artifacts.require('FantomOfferBundleMarketplace');
+const FantomNFTFactory = artifacts.require('FantomNFTFactory');
+const FantomArtFactory = artifacts.require('FantomArtFactory');
+const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
+const FantomPriceFeed = artifacts.require('FantomPriceFeed');
+const MockERC20 = artifacts.require('MockERC20');
 
+const etherToWei = (n) => {
+  return new web3.utils.BN(
+    web3.utils.toWei(n.toString(), 'ether')
+  )
+}
 
 const {
     TREASURY_ADDRESS,
@@ -18,17 +28,17 @@ module.exports = async function(deployer, network, accounts){
 
     console.log(`
     network: ${network}`);
+
+    const platformFeeRecipient = accounts[1];
+    const platformFee = new web3.utils.BN('25');    
+    const mintFee = new web3.utils.BN('20');
     
     await deployer.deploy(FantomAddressRegistry);
     const fantomAddressRegistry = await FantomAddressRegistry.deployed();
 
-    await deployer.deploy(Artion, TREASURY_ADDRESS, '2000000000000000000');
+    await deployer.deploy(Artion, TREASURY_ADDRESS, platformFee);
     const artion = await Artion.deployed();
 
-
-    const platformFeeRecipient = accounts[1];
-    const platformFee = new web3.utils.BN('25');
-    
     await deployer.deploy(FantomAuction);
     await deployer.deploy(FantomBid);
     
@@ -75,11 +85,31 @@ module.exports = async function(deployer, network, accounts){
     await fantomOfferBundleMarketplace.updateAddressRegistry(fantomAddressRegistry.address);
     await fantomListingBundleMarketplace.updateAddressRegistry(fantomAddressRegistry.address);
 
+    await deployer.deploy(FantomNFTFactory, fantomAuction.address, fantomMarketplace.address, fantomBundleMarketplace.address, mintFee, platformFeeRecipient, platformFee);
+    const fantomNFTFactory = await FantomNFTFactory.deployed();
+    
+    await deployer.deploy(FantomTokenRegistry);
+    const fantomTokenRegistry = await FantomTokenRegistry.deployed();
+
+    await deployer.deploy(MockERC20, "wFTM", "wFTM", etherToWei(1000000));
+    const mockERC20 = await MockERC20.deployed();
+
+    await deployer.deploy(FantomPriceFeed, FantomAddressRegistry.address, mockERC20.address);
+    const fantomPriceFeed = await FantomPriceFeed.deployed();
+    await fantomPriceFeed.updateAddressRegistry(fantomAddressRegistry.address);
+
+    await deployer.deploy(FantomArtFactory, fantomMarketplace.address, fantomBundleMarketplace.address, mintFee, platformFeeRecipient, platformFee);
+    const fantomArtFactory = await FantomArtFactory.deployed();
+
     await fantomAddressRegistry.updateArtion(artion.address);
     await fantomAddressRegistry.updateAuction(fantomAuction.address);
     await fantomAddressRegistry.updateMarketplace(fantomMarketplace.address);
     await fantomAddressRegistry.updateOfferMarketplace(fantomOfferMarketplace.address);
     await fantomAddressRegistry.updateBundleMarketplace(fantomBundleMarketplace.address);
     await fantomAddressRegistry.updateOfferBundleMarketplace(fantomOfferBundleMarketplace.address);
+    await fantomAddressRegistry.updateNFTFactory(fantomNFTFactory.address);
+    await fantomAddressRegistry.updateTokenRegistry(fantomTokenRegistry.address);
+    await fantomAddressRegistry.updatePriceFeed(fantomPriceFeed.address);
+    await fantomAddressRegistry.updateArtFactory(fantomArtFactory.address);
 
 }
