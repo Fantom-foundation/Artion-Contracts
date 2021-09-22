@@ -16,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 import "./interface/IFantomAddressRegistry.sol";
 import "./interface/IFantomMarketplace.sol";
+import "./interface/IFantomOfferMarketplace.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomBundleMarketplace.sol";
 import "./interface/IFantomListingBundleMarketplace.sol";
@@ -77,6 +78,15 @@ OwnableUpgradeable,
 
     /// @notice FantomListingBundleMarketplace
     IFantomListingBundleMarketplace public fantomListingBundleMarketplace;
+
+    modifier onlyContract() {
+        require(
+            addressRegistry.auction() == _msgSender() ||
+                addressRegistry.marketplace() == _msgSender(),
+            "sender must be auction or marketplace"
+        );
+        _;
+    }
 
     modifier onlyFantomBundleMarketplace() {
         require(_msgSender() == fantomBundleMarketplaceAddress, "sender is not allowed");
@@ -195,7 +205,8 @@ OwnableUpgradeable,
             }
             
         //replace owners[bundleID] with a local variable and a function call from FantomBundleMarketplace
-            IFantomMarketplace(addressRegistry.marketplace()).validateItemSold(
+            //IFantomMarketplace(addressRegistry.marketplace()).validateItemSold(
+            IFantomOfferMarketplace(addressRegistry.offerMarketplace()).validateItemSold(
                 listing.nfts[i],
                 listing.tokenIds[i],
                 //owners[bundleID],
@@ -241,6 +252,133 @@ OwnableUpgradeable,
 
     function emitOfferCanceledEvent(address creator, string memory bundleID) external onlyFantomBundleMarketplace{
         emit OfferCanceled(creator, bundleID);
+    }
+
+    /**
+     * @notice Validate and cancel listing
+     * @dev Only marketplace can access
+     */
+    function validateItemSold(
+        address _nftAddress,
+        uint256 _tokenId,
+        uint256 _quantity
+    ) external 
+        onlyContract
+        {
+        //replace with a funciton call from fantomBundleMarketplace
+        //uint256 length = bundleIdsPerItem[_nftAddress][_tokenId].length();
+        uint256 length = fantomBundleMarketplace.bundleIdsPerItemLength(_nftAddress,_tokenId);
+        for (uint256 i; i < length; i++) {
+            //replace with a function call from fantomBundleMarketplace
+            //bytes32 bundleID = bundleIdsPerItem[_nftAddress][_tokenId].at(i);
+            bytes32 bundleID = fantomBundleMarketplace.bundleIdsPerItemAt(_nftAddress,_tokenId, i);
+            //replace with a function call  from fantomBundleMarketplace
+            //address _owner = owners[bundleID];
+            address _owner = fantomBundleMarketplace.owners(bundleID);
+            if (_owner != address(0)) {
+                // replace with function calls from FantomListingBundleMarketplace.sol
+                //Listing storage listing = listings[_owner][bundleID];
+                Listing memory listing;
+                (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_owner, bundleID);
+                // replace with a fucntion call from FantomBundleMarketplace
+                //string memory _bundleID = bundleIds[bundleID];
+                string memory _bundleID = fantomBundleMarketplace.bundleIds(bundleID);
+                //replace with a function call from FantomBundleMarketplace
+                //uint256 index = nftIndexes[bundleID][_nftAddress][_tokenId];
+                uint256 index = fantomBundleMarketplace.nftIndexes(bundleID,_nftAddress, _tokenId);
+                if (listing.quantities[index] > _quantity) {
+                    //replace with  a function call from FantomListingBundleMarketplace.sol
+                    //listing.quantities[index] = listing.quantities[index].sub(
+                    //    _quantity
+                    //);
+                    //fantomListingBundleMarketplace.subListingQuantity(owners[bundleID], bundleID, index, _quantity);
+                    fantomListingBundleMarketplace.subListingQuantity(_owner, bundleID, index, _quantity);
+                } else {
+                    //delete (nftIndexes[bundleID][_nftAddress][_tokenId]);
+                    fantomBundleMarketplace.deleteNftIndex(bundleID, _nftAddress, _tokenId);
+                    if (listing.nfts.length == 1) {
+                        //replace with a function call from FantomListingBundleMarketplace.sol
+                        //delete (listings[_owner][bundleID]);
+                        fantomListingBundleMarketplace.deleteListing(_owner, bundleID);
+                        //delete (owners[bundleID]);
+                        fantomBundleMarketplace.deleteOwner(bundleID);
+                        //delete (bundleIds[bundleID]);
+                        fantomBundleMarketplace.deleteBundleId(bundleID);
+                        //replace with a function call from FantomListingBundleMarketplace.sol
+                        //emit ItemUpdated(
+                        //    _owner,
+                        //    _bundleID,
+                        //    new address[](0),
+                        //    new uint256[](0),
+                        //    new uint256[](0),
+                        //    address(0),
+                        //    0
+                        //);
+                        fantomListingBundleMarketplace.emitItemUpdatedEvent(
+                            _owner,
+                            _bundleID,
+                            new address[](0),
+                            new uint256[](0),
+                            new uint256[](0),
+                            address(0),
+                            0
+                        );
+                        continue;
+                    } else {
+                        if (index < listing.nfts.length - 1) {
+                            //replace with a function call from FantomListingBundleMarketplace.sol
+                            // listing.nfts[index] = listing.nfts[
+                            //     listing.nfts.length - 1
+                            // ];
+                            // listing.tokenIds[index] = listing.tokenIds[
+                            //     listing.tokenIds.length - 1
+                            // ];
+                            // listing.quantities[index] = listing.quantities[
+                            //     listing.quantities.length - 1
+                            // ];
+                            fantomListingBundleMarketplace.copyLastListingNftsTokenIdsQuantities(_owner, bundleID, index);
+                            //replace with a function call from FantomBundleMarketplace
+                            //nftIndexes[bundleID][listing.nfts[index]][listing.tokenIds[index]] = index;
+                            fantomBundleMarketplace.setnftIndex(bundleID, listing.nfts[index], listing.tokenIds[index], index);
+                        }
+                        //replace with a function call from FantomListingBundleMarketplace
+                        // listing.nfts.pop();
+                        // listing.tokenIds.pop();
+                        // listing.quantities.pop();
+                        fantomListingBundleMarketplace.popListingNftsTokenIdsQuantities(_owner, bundleID);
+                    }
+                }
+                //replace with a function call from fantomListingBundleMarketplace
+                // emit ItemUpdated(
+                //     _owner,
+                //     _bundleID,
+                //     listing.nfts,
+                //     listing.tokenIds,
+                //     listing.quantities,
+                //     listing.payToken,
+                //     listing.price
+                // );
+                fantomListingBundleMarketplace.emitItemUpdatedEvent(
+                    _owner,
+                    _bundleID,
+                    listing.nfts,
+                    listing.tokenIds,
+                    listing.quantities,
+                    listing.payToken,
+                    listing.price
+                );
+            }
+        }
+
+        /*delete (bundleIdsPerItem[_nftAddress][_tokenId]);*/
+    }
+
+    /**
+     @notice Update FantomAddressRegistry contract
+     @dev Only admin
+     */
+    function updateAddressRegistry(address _registry) external onlyOwner {
+        addressRegistry = IFantomAddressRegistry(_registry);
     }
 
     ////////////////////////////

@@ -8,4 +8,11 @@ interface IFantomOfferBundleMarketplace {
 
     function emitOfferCanceledEvent(address creator, string memory bundleID) external;
 
+    function validateItemSold(
+        address,
+        uint256,
+        uint256
+    ) external;
+
+
 }

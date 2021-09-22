@@ -298,6 +298,14 @@ OwnableUpgradeable,
         emit ItemUpdated(owner, bundleID, nft, tokenId, quantity, payToken, newPrice);
     }
 
+    /**
+     @notice Update FantomAddressRegistry contract
+     @dev Only admin
+     */
+    function updateAddressRegistry(address _registry) external onlyOwner {
+        addressRegistry = IFantomAddressRegistry(_registry);
+    }
+    
     ////////////////////////////
     /// Internal and Private ///
     ////////////////////////////

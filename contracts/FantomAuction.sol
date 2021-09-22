@@ -12,7 +12,8 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 import "./interface/IFantomAddressRegistry.sol";
 import "./interface/IFantomMarketplace.sol";
-import "./interface/IFantomBundleMarketplace.sol";
+//import "./interface/IFantomBundleMarketplace.sol";
+import "./interface/IFantomOfferBundleMarketplace.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomBid.sol";
 
@@ -580,7 +581,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId
         );
 
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        IFantomOfferBundleMarketplace(addressRegistry.offerBundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
         emit AuctionResulted(

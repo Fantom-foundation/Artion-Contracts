@@ -16,9 +16,16 @@ contract FantomAddressRegistry is Ownable {
 
     /// @notice FantomMarketplace contract
     address public marketplace;
+   
+    /// @notice FantomOfferMarketplace contract
+    address public offerMarketplace;
+   
 
     /// @notice FantomBundleMarketplace contract
     address public bundleMarketplace;
+
+    /// @notice FantomOfferBundleMarketplace contract
+    address public offerBundleMarketplace;
 
     /// @notice FantomNFTFactory contract
     address public factory;
@@ -67,6 +74,14 @@ contract FantomAddressRegistry is Ownable {
     }
 
     /**
+     @notice Update FantomMOfferarketplace contract
+     @dev Only admin
+     */
+    function updateOfferMarketplace(address _offerMarketplace) external onlyOwner {
+        offerMarketplace = _offerMarketplace;
+    }
+    
+    /**
      @notice Update FantomBundleMarketplace contract
      @dev Only admin
      */
@@ -75,6 +90,17 @@ contract FantomAddressRegistry is Ownable {
         onlyOwner
     {
         bundleMarketplace = _bundleMarketplace;
+    }
+    
+    /**
+     @notice Update FantomOfferBundleMarketplace contract
+     @dev Only admin
+     */
+    function updateOfferBundleMarketplace(address _offerBundleMarketplace)
+        external
+        onlyOwner
+    {
+        offerBundleMarketplace = _offerBundleMarketplace;
     }
 
     /**

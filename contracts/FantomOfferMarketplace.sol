@@ -13,7 +13,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./interface/IFantomAddressRegistry.sol";
-import "./interface/IFantomBundleMarketplace.sol";
+//import "./interface/IFantomBundleMarketplace.sol";
+import "./interface/IFantomOfferBundleMarketplace.sol";
 import "./interface/IFantomNFTFactory.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomPriceFeed.sol";
@@ -106,6 +107,14 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(
             offer.quantity > 0 && offer.deadline > _getNow(),
             "offer not exists or expired"
+        );
+        _;
+    }
+
+    modifier onlyMarketplace() {
+        require(
+            address(addressRegistry.bundleMarketplace()) == _msgSender(),
+            "sender must be bundle marketplace"
         );
         _;
     }
@@ -273,7 +282,8 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        IFantomOfferBundleMarketplace(addressRegistry.offerBundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, offer.quantity);
         // replace with function call from FantomListingMarketplace
         //delete (listings[_nftAddress][_tokenId][_msgSender()]);
@@ -301,6 +311,31 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             offer.pricePerItem
         );
         emit OfferCanceled(_creator, _nftAddress, _tokenId);
+    }
+
+    /**
+     * @notice Validate and cancel listing
+     * @dev Only bundle marketplace can access
+     */
+    function validateItemSold(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _seller,
+        address _buyer
+    ) external onlyMarketplace {
+        // replace with a function call from FantomListingMarketplace
+        //Listing memory item = listings[_nftAddress][_tokenId][_seller];
+        (uint256 quantity, , , ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _seller);
+        // replace with local quantity
+        //if (item.quantity > 0) {
+        if (quantity > 0) {
+            // replace with a function call from FantomListingMarketplace
+            //_cancelListing(_nftAddress, _tokenId, _seller);
+            fantomListingMarketplace.cancelListing(_nftAddress, _tokenId, _seller);
+        }
+        delete (offers[_nftAddress][_tokenId][_buyer]);
+
+        emit OfferCanceled(_buyer, _nftAddress, _tokenId);
     }
 
     /**

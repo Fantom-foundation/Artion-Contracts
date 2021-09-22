@@ -13,7 +13,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./interface/IFantomAddressRegistry.sol";
-import "./interface/IFantomBundleMarketplace.sol";
+//import "./interface/IFantomBundleMarketplace.sol";
+import "./interface/IFantomOfferBundleMarketplace.sol";
 import "./interface/IFantomNFTFactory.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomPriceFeed.sol";
@@ -112,8 +113,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address indexed nft,
         uint256 tokenId
     );*/
-    //event UpdatePlatformFee(uint16 platformFee);
-    //event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
+    event UpdatePlatformFee(uint16 platformFee);
+    event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
     /// @notice Structure for listed items
     struct Listing {
@@ -179,13 +180,13 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     IFantomListingMarketplace public fantomListingMarketplace;
 
 
-    modifier onlyMarketplace() {
+    /*modifier onlyMarketplace() {
         require(
-            address(addressRegistry.bundleMarketplace()) == _msgSender(),
+           address(addressRegistry.bundleMarketplace()) == _msgSender(),
             "sender must be bundle marketplace"
         );
         _;
-    }
+    }*/
 
     modifier isListed(
         address _nftAddress,
@@ -562,7 +563,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        IFantomOfferBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
 
         emit ItemSold(
@@ -838,7 +840,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      */
     function updatePlatformFee(uint16 _platformFee) external onlyOwner {
         platformFee = _platformFee;
-        //emit UpdatePlatformFee(_platformFee);
+        emit UpdatePlatformFee(_platformFee);
     }
 
     /**
@@ -851,7 +853,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         onlyOwner
     {
         feeReceipient = _platformFeeRecipient;
-        //emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
+        emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
     /**
@@ -866,7 +868,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Validate and cancel listing
      * @dev Only bundle marketplace can access
      */
-    function validateItemSold(
+    /*function validateItemSold(
         address _nftAddress,
         uint256 _tokenId,
         address _seller,
@@ -889,7 +891,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // replace with a function call from FantomOfferMarketplace
         //emit OfferCanceled(_buyer, _nftAddress, _tokenId);
         fantomOfferMarketplace.emitOfferCanceledEvent(_buyer, _nftAddress, _tokenId);
-    }
+    }*/
 
     function emitItemSoldEvent(
                             address seller,

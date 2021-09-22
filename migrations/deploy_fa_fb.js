@@ -5,7 +5,7 @@ const {
   } = require('./constants');
 
 module.exports = async function(deployer, network, accounts){
-    console.log(`
+   console.log(`
    network: ${network}`);
     
     const platformFeeRecipient = accounts[1];

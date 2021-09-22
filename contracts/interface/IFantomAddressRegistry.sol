@@ -6,8 +6,12 @@ interface IFantomAddressRegistry {
     function artion() external view returns (address);
 
     function marketplace() external view returns (address);
+    
+    function offerMarketplace() external view returns (address);
 
     function bundleMarketplace() external view returns (address);
+
+    function offerBundleMarketplace() external view returns (address);
 
     function factory() external view returns (address);
 
