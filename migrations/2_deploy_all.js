@@ -24,7 +24,7 @@ module.exports = async function(deployer, network, accounts){
 
     console.log(`
     network: ${network}`);
-  /*
+  
     const platformFeeRecipient = accounts[1];
     const platformFee = etherToWei(5);        
     const mintFee = etherToWei(5);
@@ -110,5 +110,5 @@ module.exports = async function(deployer, network, accounts){
     await fantomAddressRegistry.updateTokenRegistry(fantomTokenRegistry.address);
     await fantomAddressRegistry.updatePriceFeed(fantomPriceFeed.address);
     await fantomAddressRegistry.updateArtFactory(fantomArtFactory.address);    
-*/
+
 }
