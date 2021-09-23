@@ -146,7 +146,8 @@ OwnableUpgradeable,
                 IERC721 nft = IERC721(_nftAddresses[i]);
                 _check721Owning(_nftAddresses[i], _tokenIds[i], _msgSender());
                 require(
-                    nft.isApprovedForAll(_msgSender(), address(this)),
+                    //nft.isApprovedForAll(_msgSender(), address(this)),
+                    nft.isApprovedForAll(_msgSender(), fantomBundleMarketplaceAddress),
                     "item not approved"
                 );
 
@@ -162,7 +163,8 @@ OwnableUpgradeable,
                     _msgSender()
                 );
                 require(
-                    nft.isApprovedForAll(_msgSender(), address(this)),
+                    //nft.isApprovedForAll(_msgSender(), address(this)),
+                    nft.isApprovedForAll(_msgSender(), fantomBundleMarketplaceAddress),
                     "item not approved"
                 );
 

@@ -27,6 +27,7 @@ const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const MockERC20 = artifacts.require('MockERC20');
 
 const PLATFORM_FEE = '2';
+const MARKETPLACE_PLATFORM_FEE = '50'  // 5%
 const MINT_FEE = '1';
 
 const weiToEther = (n) => {
@@ -37,7 +38,7 @@ const weiToEther = (n) => {
 contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer])  {
 
     const platformFee = ether(PLATFORM_FEE);
-    const marketPlatformFee = new BN(PLATFORM_FEE);    
+    const marketPlatformFee = new BN(MARKETPLACE_PLATFORM_FEE);    
     const mintFee = ether(MINT_FEE);
 
     beforeEach(async function () {
@@ -73,6 +74,10 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
         await this.fantomBundleMarketplace.initialize(platformFeeRecipient, platformFee, this.fantomOfferBundleMarketplace.address, this.fantomListingBundleMarketplace.address);
         await this.fantomOfferBundleMarketplace.initialize(this.fantomBundleMarketplace.address, this.fantomListingBundleMarketplace.address);
         await this.fantomListingBundleMarketplace.initialize(this.fantomBundleMarketplace.address);
+
+        await this.fantomBundleMarketplace.updateAddressRegistry(this.fantomAddressRegistry.address);
+        await this.fantomOfferBundleMarketplace.updateAddressRegistry(this.fantomAddressRegistry.address);
+        await this.fantomListingBundleMarketplace.updateAddressRegistry(this.fantomAddressRegistry.address);
 
         this.fantomNFTFactory = await FantomNFTFactory.new(this.fantomAuction.address, this.fantomMarketplace.address, this.fantomBundleMarketplace.address, mintFee, platformFeeRecipient, platformFee);
         this.fantomTokenRegistry = await FantomTokenRegistry.new();
@@ -158,19 +163,58 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
 
             console.log(`
             The artist approves the nft to the market`);
-            await this.artion.setApprovalForAll(this.fantomListingMarketplace.address, true, {from: artist});
+            await this.artion.setApprovalForAll(this.fantomMarketplace.address, true, {from: artist});
 
             console.log(`
-            The artist lists the nft in the market with price 20 wFTM and starting time 2021-09-23 10:00:00 GMT`);
+            The artist lists the nft in the market with price 20 wFTM and starting time 2021-09-22 10:00:00 GMT`);
             await this.fantomListingMarketplace.listItem(
                     this.artion.address,
                     new BN('1'),
                     new BN('1'),
                     this.mockERC20.address,
                     ether('20'),
-                    new BN('11632391200'), // 2021-09-23 10:00:00 GMT
+                    new BN('1632304800'), // 2021-09-22 10:00:00 GMT
                     { from : artist }
                     );
+
+            let listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
+            //console.log('listing: ', listing);
+
+            console.log(`
+            Mint 50 wFTMs to buyer so he can buy the nft`);
+            await this.mockERC20.mint(buyer, ether('50'));
+
+            console.log(`
+            Buyer approves FantomMarketplace to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomMarketplace.address, ether('50'), {from: buyer});
+            
+            console.log(`
+            Buyer buys the nft for 20 wFTMs`);
+            await this.fantomMarketplace.buyItemWithERC20( // function overloading doesn't work
+            //await this.fantomMarketplace.buyItem(
+                this.artion.address, 
+                new BN('1'), 
+                this.mockERC20.address, 
+                artist, 
+                { from: buyer});
+
+            balance = await this.mockERC20.balanceOf(buyer);
+            console.log(`
+            *The wFTM balance of buyer now should be 30 wFTMs`);
+            expect(weiToEther(balance)*1).to.be.equal(30);
+
+            let nftOwner = await this.artion.ownerOf(new BN('1'));
+            console.log(`
+            The owner of the nft now should be the buyer`);
+            expect(nftOwner).to.be.equal(buyer);
+            
+            balance = await this.mockERC20.balanceOf(artist);
+            console.log(`
+            *The wFTM balance of the artist should be 19 wFTMs`);
+            expect(weiToEther(balance)*1).to.be.equal(19);
+
+            listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
+            //console.log('listing: ', listing);
 
             console.log('');
         });

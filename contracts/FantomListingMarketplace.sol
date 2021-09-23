@@ -99,7 +99,8 @@ contract FantomListingMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradea
     }
 
     modifier onlyFantomOfferMarketplace(){
-        require(_msgSender() == fantomOfferMarketplaceAddress, "not called by FantomOfferMarketplace");
+        require(_msgSender() == fantomOfferMarketplaceAddress || _msgSender() == fantomMarketplaceAddress, 
+            "not called by FantomOfferMarketplace");
         _;
     }
 
@@ -137,7 +138,8 @@ contract FantomListingMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradea
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");        
             require(
-                nft.isApprovedForAll(_msgSender(), address(this)),
+                //nft.isApprovedForAll(_msgSender(), address(this)),
+                nft.isApprovedForAll(_msgSender(), fantomMarketplaceAddress),
                 "item not approved"
             );
         } else if (
@@ -149,7 +151,8 @@ contract FantomListingMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradea
                 "must hold enough nfts"
             );
             require(
-                nft.isApprovedForAll(_msgSender(), address(this)),
+                //nft.isApprovedForAll(_msgSender(), address(this)),
+                nft.isApprovedForAll(_msgSender(), fantomMarketplaceAddress),
                 "item not approved"
             );
         } else {

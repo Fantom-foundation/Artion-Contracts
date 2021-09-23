@@ -369,8 +369,9 @@ OwnableUpgradeable,
                 );
             }
         }
-
-        /*delete (bundleIdsPerItem[_nftAddress][_tokenId]);*/
+        //replace with a function call from FantomBundleMarketplace.sol
+        //delete (bundleIdsPerItem[_nftAddress][_tokenId]);
+        fantomBundleMarketplace.deleteBundleIdsPerItem(_nftAddress, _tokenId);
     }
 
     /**

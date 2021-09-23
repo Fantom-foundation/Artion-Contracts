@@ -41,6 +41,8 @@ interface IFantomBundleMarketplace {
 
     function bundleIdsPerItemAt(address nft, uint256 tokenId, uint256 atIndex) external view returns(bytes32);
 
+    function deleteBundleIdsPerItem(address nft, uint256 tokenId) external;
+
     function emitItemSoldEvent(
         address seller,
         address buyer,

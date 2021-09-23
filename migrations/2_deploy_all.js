@@ -24,7 +24,7 @@ module.exports = async function(deployer, network, accounts){
 
     console.log(`
     network: ${network}`);
-  
+  /*
     const platformFeeRecipient = accounts[1];
     const platformFee = etherToWei(5);        
     const mintFee = etherToWei(5);
@@ -91,6 +91,8 @@ module.exports = async function(deployer, network, accounts){
     await deployer.deploy(MockERC20, "wFTM", "wFTM", etherToWei(1000000));
     const mockERC20 = await MockERC20.deployed();
 
+    await fantomTokenRegistry.add(mockERC20.address);
+
     await deployer.deploy(FantomPriceFeed, fantomAddressRegistry.address, mockERC20.address);
     const fantomPriceFeed = await FantomPriceFeed.deployed();
     //await fantomPriceFeed.updateAddressRegistry(fantomAddressRegistry.address);
@@ -108,5 +110,5 @@ module.exports = async function(deployer, network, accounts){
     await fantomAddressRegistry.updateTokenRegistry(fantomTokenRegistry.address);
     await fantomAddressRegistry.updatePriceFeed(fantomPriceFeed.address);
     await fantomAddressRegistry.updateArtFactory(fantomArtFactory.address);    
-
+*/
 }

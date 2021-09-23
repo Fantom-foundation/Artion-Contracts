@@ -745,6 +745,9 @@ contract FantomBundleMarketplace is
         return bundleIdsPerItem[nft][tokenId].at(atIndex);
     }
 
+    function deleteBundleIdsPerItem(address nft, uint256 tokenId) external onlyFantomListingOrOfferBundleMarketplace{
+        delete (bundleIdsPerItem[nft][tokenId]);
+    }
 
     function emitItemSoldEvent(
         address seller,

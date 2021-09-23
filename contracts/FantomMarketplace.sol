@@ -446,7 +446,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @param _nftAddress NFT contract address
     /// @param _tokenId TokenId
     /// refactor
-    function buyItem(
+    function buyItemWithERC20(  //function overloading doesn't work when testing
+    //function buyItem(
         address _nftAddress,
         uint256 _tokenId,
         address _payToken,
@@ -564,9 +565,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             );
         }
         //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-        IFantomOfferBundleMarketplace(addressRegistry.bundleMarketplace())
+        IFantomOfferBundleMarketplace(addressRegistry.offerBundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
-
+        
         emit ItemSold(
             _owner,
             _msgSender(),
