@@ -390,18 +390,14 @@ contract FantomBundleMarketplace is
 
         for (uint256 i; i < listing.nfts.length; i++) {
             if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
-            //if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC721)) {
-                //_check721Owning(listing.nfts[i], listing.tokenIds[i], owner);
-                require(IERC721(listing.nfts[i]).ownerOf(listing.tokenIds[i]) == owner,  "not owning item");
+                _check721Owning(listing.nfts[i], listing.tokenIds[i], owner);
             } else if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC1155)) {
-            //} else if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC1155)) {
-                  /* _check1155Owning(
+                  _check1155Owning(
                     listing.nfts[i],
                     listing.tokenIds[i],
                     listing.quantities[i],
                     owner
-                ); */
-                require(IERC1155(listing.nfts[i]).balanceOf(owner, listing.tokenIds[i]) >= listing.quantities[i], "not owning item");
+                );
 
             }
         }
@@ -440,7 +436,6 @@ contract FantomBundleMarketplace is
         // Transfer NFT to buyer
         for (uint256 i; i < listing.nfts.length; i++) {
             if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
-            //if (IERC165(listing.nfts[i]).supportsInterface(INTERFACE_ID_ERC721)) {
                 IERC721(listing.nfts[i]).safeTransferFrom(
                     owner,
                     _msgSender(),

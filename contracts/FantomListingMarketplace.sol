@@ -135,7 +135,7 @@ contract FantomListingMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradea
     ) external notListed(_nftAddress, _tokenId, _msgSender()) {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
+            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");        
             require(
                 nft.isApprovedForAll(_msgSender(), address(this)),
                 "item not approved"

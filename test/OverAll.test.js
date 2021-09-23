@@ -1,5 +1,6 @@
 const {
     expectRevert,
+    expectEvent,
     BN,
     ether,
     constants,
@@ -25,22 +26,15 @@ const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const MockERC20 = artifacts.require('MockERC20');
 
-//const TREASURY_ADDRESS=  '0x9B2Bb6290fb910a960Ec344cDf2ae60ba89647f6';
-const PLATFORM_FEE = '5';
-const MINT_FEE = '2';
+const PLATFORM_FEE = '2';
+const MINT_FEE = '1';
 
 const weiToEther = (n) => {
     return web3.utils.fromWei(n.toString(), 'ether');
 }
 
-/* const etherToWei = (n) => {
-    return new web3.utils.BN(
-      web3.utils.toWei(n.toString(), 'ether')
-    )
-} */
 
-
-contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
+contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer])  {
 
     const platformFee = ether(PLATFORM_FEE);
     const marketPlatformFee = new BN(PLATFORM_FEE);    
@@ -84,6 +78,8 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
         this.fantomTokenRegistry = await FantomTokenRegistry.new();
 
         this.mockERC20 = await MockERC20.new("wFTM", "wFTM", ether('1000000'));
+
+        this.fantomTokenRegistry.add(this.mockERC20.address);
 
         this.fantomPriceFeed = await FantomPriceFeed.new(this.fantomAddressRegistry.address, this.mockERC20.address);
         //await this.fantomPriceFeed.updateAddressRegistry(this.fantomAddressRegistry.address);
@@ -138,7 +134,6 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
             console.log(`
             FTM balance of recipient after minting: ${weiToEther(balance4)}`);
 
-
             console.log(`
             *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
             the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases`);
@@ -146,7 +141,38 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
 
             console.log(`
             *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
-            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);             
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            })
+
+            console.log(`
+            The artist approves the nft to the market`);
+            await this.artion.setApprovalForAll(this.fantomListingMarketplace.address, true, {from: artist});
+
+            console.log(`
+            The artist lists the nft in the market with price 20 wFTM and starting time 2021-09-23 10:00:00 GMT`);
+            await this.fantomListingMarketplace.listItem(
+                    this.artion.address,
+                    new BN('1'),
+                    new BN('1'),
+                    this.mockERC20.address,
+                    ether('20'),
+                    new BN('11632391200'), // 2021-09-23 10:00:00 GMT
+                    { from : artist }
+                    );
+
+            console.log('');
         });
     })
 
