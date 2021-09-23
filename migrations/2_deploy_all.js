@@ -22,6 +22,7 @@ const etherToWei = (n) => {
 
 const {
     TREASURY_ADDRESS,
+    PLATFORM_FEE
   } = require('./constants');
 
 module.exports = async function(deployer, network, accounts){
@@ -30,8 +31,8 @@ module.exports = async function(deployer, network, accounts){
     network: ${network}`);
 
     const platformFeeRecipient = accounts[1];
-    const platformFee = new web3.utils.BN('25');    
-    const mintFee = new web3.utils.BN('20');
+    const platformFee = new web3.utils.BN(PLATFORM_FEE);    
+    const mintFee = etherToWei(10);
     
     await deployer.deploy(FantomAddressRegistry);
     const fantomAddressRegistry = await FantomAddressRegistry.deployed();
@@ -94,9 +95,9 @@ module.exports = async function(deployer, network, accounts){
     await deployer.deploy(MockERC20, "wFTM", "wFTM", etherToWei(1000000));
     const mockERC20 = await MockERC20.deployed();
 
-    await deployer.deploy(FantomPriceFeed, FantomAddressRegistry.address, mockERC20.address);
+    await deployer.deploy(FantomPriceFeed, fantomAddressRegistry.address, mockERC20.address);
     const fantomPriceFeed = await FantomPriceFeed.deployed();
-    await fantomPriceFeed.updateAddressRegistry(fantomAddressRegistry.address);
+    //await fantomPriceFeed.updateAddressRegistry(fantomAddressRegistry.address);
 
     await deployer.deploy(FantomArtFactory, fantomMarketplace.address, fantomBundleMarketplace.address, mintFee, platformFeeRecipient, platformFee);
     const fantomArtFactory = await FantomArtFactory.deployed();
