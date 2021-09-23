@@ -20,24 +20,20 @@ const etherToWei = (n) => {
   )
 }
 
-const {
-    TREASURY_ADDRESS,
-    PLATFORM_FEE
-  } = require('./constants');
-
 module.exports = async function(deployer, network, accounts){
 
     console.log(`
     network: ${network}`);
 
     const platformFeeRecipient = accounts[1];
-    const platformFee = new web3.utils.BN(PLATFORM_FEE);    
-    const mintFee = etherToWei(10);
+    const platformFee = etherToWei(5);        
+    const mintFee = etherToWei(5);
+    const marketPlatformFee = new web3.utils.BN('5');
     
     await deployer.deploy(FantomAddressRegistry);
     const fantomAddressRegistry = await FantomAddressRegistry.deployed();
 
-    await deployer.deploy(Artion, TREASURY_ADDRESS, platformFee);
+    await deployer.deploy(Artion, platformFeeRecipient, platformFee);
     const artion = await Artion.deployed();
 
     await deployer.deploy(FantomAuction);
@@ -61,7 +57,7 @@ module.exports = async function(deployer, network, accounts){
     await deployer.deploy(FantomOfferMarketplace);    
     const fantomOfferMarketplace = await FantomOfferMarketplace.deployed();
 
-    await fantomMarketplace.initialize(platformFeeRecipient, platformFee, fantomOfferMarketplace.address, fantomListingMarketplace.address);
+    await fantomMarketplace.initialize(platformFeeRecipient, marketPlatformFee, fantomOfferMarketplace.address, fantomListingMarketplace.address);
     await fantomOfferMarketplace.initialize(fantomMarketplace.address, fantomListingMarketplace.address);
     await fantomListingMarketplace.initialize(fantomMarketplace.address, fantomOfferMarketplace.address);
 

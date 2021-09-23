@@ -25,24 +25,31 @@ const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const MockERC20 = artifacts.require('MockERC20');
 
-const TREASURY_ADDRESS=  '0x9B2Bb6290fb910a960Ec344cDf2ae60ba89647f6';
-const PLATFORM_FEE = '25';
-const MINT_FEE = '5';
+//const TREASURY_ADDRESS=  '0x9B2Bb6290fb910a960Ec344cDf2ae60ba89647f6';
+const PLATFORM_FEE = '5';
+const MINT_FEE = '2';
 
 const weiToEther = (n) => {
     return web3.utils.fromWei(n.toString(), 'ether');
 }
 
+/* const etherToWei = (n) => {
+    return new web3.utils.BN(
+      web3.utils.toWei(n.toString(), 'ether')
+    )
+} */
+
 
 contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
 
-    const platformFee = new BN(PLATFORM_FEE);    
+    const platformFee = ether(PLATFORM_FEE);
+    const marketPlatformFee = new BN(PLATFORM_FEE);    
     const mintFee = ether(MINT_FEE);
 
     beforeEach(async function () {
         
         this.fantomAddressRegistry = await FantomAddressRegistry.new();
-        this.artion = await Artion.new(TREASURY_ADDRESS, platformFee);
+        this.artion = await Artion.new(platformFeeRecipient, platformFee);
 
         this.fantomAuction = await FantomAuction.new();
         this.fantomBid = await FantomBid.new();
@@ -57,7 +64,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
         this.fantomListingMarketplace = await FantomListingMarketplace.new();
         this.fantomOfferMarketplace = await FantomOfferMarketplace.new();
 
-        await this.fantomMarketplace.initialize(platformFeeRecipient, platformFee, this.fantomOfferMarketplace.address, this.fantomListingMarketplace.address);
+        await this.fantomMarketplace.initialize(platformFeeRecipient, marketPlatformFee, this.fantomOfferMarketplace.address, this.fantomListingMarketplace.address);
         await this.fantomOfferMarketplace.initialize(this.fantomMarketplace.address, this.fantomListingMarketplace.address);
         await this.fantomListingMarketplace.initialize(this.fantomMarketplace.address, this.fantomOfferMarketplace.address);
 
@@ -105,23 +112,41 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
             An artist mints an NFT for him/herself
             `);
 
-            let balance = await web3.eth.getBalance(artist);
+            let balance = await this.artion.platformFee();
             console.log(`
-            FTM balance of artist before minting: ${weiToEther(balance)}`);
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
 
             console.log(`
             Now minting...`);
-            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether('10')});
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
             console.log(`
             Minted successfully`);
 
-            let balance2 = await web3.eth.getBalance(artist);
+            let balance3 = await web3.eth.getBalance(artist);
             console.log(`
-            FTM balance of artist after minting: ${weiToEther(balance2)}`);
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
 
             console.log(`
-            *The difference should be more than ${MINT_FEE} FTM as the mint fee is ${MINT_FEE} FTM and minting costs some gases`);
-            expect(weiToEther(balance)*1 - weiToEther(balance2)*1).to.be.greaterThan(MINT_FEE * 1);
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);             
         });
     })
 
