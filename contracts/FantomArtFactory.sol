@@ -8,6 +8,7 @@ import "./FantomArtTradable.sol";
 contract FantomArtFactory is Ownable {
     /// @dev Events of the contract
     event ContractCreated(address creator, address nft);
+    event ContractDisabled(address caller, address nft);
 
     /// @notice Fantom marketplace contract address;
     address public marketplace;
@@ -26,6 +27,8 @@ contract FantomArtFactory is Ownable {
 
     /// @notice NFT Address => Bool
     mapping(address => bool) public exists;
+
+    bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
     /// @notice Contract constructor
     constructor(
@@ -117,5 +120,28 @@ contract FantomArtFactory is Ownable {
         nft.transferOwnership(_msgSender());
         emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
+    }
+
+    /// @notice Method for registering existing FantomArtTradable contract
+    /// @param  tokenContractAddress Address of NFT contract
+    function registerTokenContract(address tokenContractAddress)
+        external
+        onlyOwner
+    {
+        require(!exists[tokenContractAddress], "Art contract already registered");
+        require(IERC165(tokenContractAddress).supportsInterface(INTERFACE_ID_ERC1155), "Not an ERC1155 contract");
+        exists[tokenContractAddress] = true;
+        emit ContractCreated(_msgSender(), tokenContractAddress);
+    }
+
+    /// @notice Method for disabling existing FantomArtTradable contract
+    /// @param  tokenContractAddress Address of NFT contract
+    function disableTokenContract(address tokenContractAddress)
+        external
+        onlyOwner
+    {
+        require(exists[tokenContractAddress], "Art contract is not registered");
+        exists[tokenContractAddress] = false;
+        emit ContractDisabled(_msgSender(), tokenContractAddress);
     }
 }

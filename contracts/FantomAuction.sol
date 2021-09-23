@@ -456,8 +456,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
                 require(
-                    payToken.transferFrom(
-                        address(this),
+                    payToken.transfer(
                         platformFeeRecipient,
                         platformFeeAboveReserve
                     ),
@@ -489,7 +488,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
                 require(
-                    payToken.transferFrom(address(this), minter, royaltyFee),
+                    payToken.transfer(minter, royaltyFee),
                     "failed to send the owner their royalties"
                 );
             }
@@ -509,8 +508,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 } else {
                     IERC20 payToken = IERC20(auction.payToken);
                     require(
-                        payToken.transferFrom(
-                            address(this),
+                        payToken.transfer(
                             minter,
                             royaltyFee
                         ),
@@ -532,8 +530,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
                 require(
-                    payToken.transferFrom(
-                        address(this),
+                    payToken.transfer(
                         auction.owner,
                         payAmount
                     ),
