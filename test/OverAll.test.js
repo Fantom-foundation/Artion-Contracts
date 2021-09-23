@@ -27,20 +27,23 @@ const MockERC20 = artifacts.require('MockERC20');
 
 const TREASURY_ADDRESS=  '0x9B2Bb6290fb910a960Ec344cDf2ae60ba89647f6';
 const PLATFORM_FEE = '25';
-const MINT_FEE = '10';
+const MINT_FEE = '5';
+
+const weiToEther = (n) => {
+    return web3.utils.fromWei(n.toString(), 'ether');
+}
 
 
+contract('Overall Test',  function ([owner, platformFeeRecipient, artist])  {
 
-contract('Overall Test', (accounts) => {
-
-    const platformFeeRecipient = accounts[1];
-    const platformFee = new web3.utils.BN(PLATFORM_FEE);    
+    const platformFee = new BN(PLATFORM_FEE);    
     const mintFee = ether(MINT_FEE);
 
-    beforeEach(async () => {
+    beforeEach(async function () {
         
         this.fantomAddressRegistry = await FantomAddressRegistry.new();
         this.artion = await Artion.new(TREASURY_ADDRESS, platformFee);
+
         this.fantomAuction = await FantomAuction.new();
         this.fantomBid = await FantomBid.new();
 
@@ -91,12 +94,34 @@ contract('Overall Test', (accounts) => {
         await this.fantomAddressRegistry.updatePriceFeed(this.fantomPriceFeed.address);
         await this.fantomAddressRegistry.updateArtFactory(this.fantomArtFactory.address);
 
-    });
+    })
 
     describe('Minting and auctioning NFT', function() {
 
         it('Scenario 1', async function(){
 
+            console.log(`
+            Scenario 1:
+            An artist mints an NFT for him/herself
+            `);
+
+            let balance = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether('10')});
+            console.log(`
+            Minted successfully`);
+
+            let balance2 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            *The difference should be more than ${MINT_FEE} FTM as the mint fee is ${MINT_FEE} FTM and minting costs some gases`);
+            expect(weiToEther(balance)*1 - weiToEther(balance2)*1).to.be.greaterThan(MINT_FEE * 1);
         });
     })
 
