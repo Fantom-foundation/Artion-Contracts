@@ -111,6 +111,8 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
             console.log(`
             Scenario 1:
             An artist mints an NFT for him/herself
+            He/She then put it on the marketplace with price of 20 wFTMs
+            A buyer then buys that NFT
             `);
 
             let balance = await this.artion.platformFee();
@@ -159,7 +161,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
                 beneficiary: artist,
                 tokenUri : 'http://artist.com/art.jpeg',
                 minter : artist
-            })
+            });
 
             console.log(`
             The artist approves the nft to the market`);
@@ -178,7 +180,12 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
                     );
 
             let listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
-            //console.log('listing: ', listing);
+            console.log(`
+            *The nft should be on the marketplace listing`);
+            expect(listing.quantity.toString()).to.be.equal('1');
+            expect(listing.payToken).to.be.equal(this.mockERC20.address);
+            expect(weiToEther(listing.pricePerItem)*1).to.be.equal(20);
+            expect(listing.startingTime.toString()).to.be.equal('1632304800');
 
             console.log(`
             Mint 50 wFTMs to buyer so he can buy the nft`);
@@ -190,13 +197,35 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
             
             console.log(`
             Buyer buys the nft for 20 wFTMs`);
-            await this.fantomMarketplace.buyItemWithERC20( // function overloading doesn't work
+            result = await this.fantomMarketplace.buyItemWithERC20( // function overloading doesn't work
             //await this.fantomMarketplace.buyItem(
                 this.artion.address, 
                 new BN('1'), 
                 this.mockERC20.address, 
                 artist, 
                 { from: buyer});
+
+            console.log(`
+            *Event ItemSold should be emitted with correct values: 
+            seller = ${artist}, 
+            buyer = ${buyer}, 
+            nft = ${this.artion.address},
+            tokenId = 1,
+            quantity =1,
+            payToken = ${this.mockERC20.address},
+            unitPrice = 20,
+            pricePerItem = 20`);
+            expectEvent.inLogs(result.logs, 'ItemSold',{
+                seller: artist,
+                buyer: buyer,
+                nft : this.artion.address,
+                tokenId : new BN('1'),
+                quantity : new BN('1'),
+                payToken : this.mockERC20.address,
+                unitPrice : ether('0'),
+                pricePerItem : ether('20')
+            });
+
 
             balance = await this.mockERC20.balanceOf(buyer);
             console.log(`
@@ -215,6 +244,12 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
 
             listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
             //console.log('listing: ', listing);
+            console.log(`
+            *The nft now should be removed from the listing`);            
+            expect(listing.quantity.toString()).to.be.equal('0');
+            expect(listing.payToken).to.be.equal(constants.ZERO_ADDRESS);
+            expect(weiToEther(listing.pricePerItem)*1).to.be.equal(0);
+            expect(listing.startingTime.toString()).to.be.equal('0');
 
             console.log('');
         });
