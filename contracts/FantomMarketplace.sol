@@ -508,6 +508,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
 
+        INFTOracle(oracle).setPrice(_nftAddress, _tokenId, _payToken, price.div(listedItem.quantity));
+
         emit ItemSold(
             _owner,
             _msgSender(),
@@ -648,6 +650,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, offer.quantity);
+
+        INFTOracle(oracle).setPrice(_nftAddress, _tokenId, address(offer.payToken), offer.pricePerItem);
+
         delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
 

@@ -549,6 +549,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
+        INFTOracle(oracle).setPrice(_nftAddress, _tokenId, auction.payToken, winningBid);
+
         emit AuctionResulted(
             _nftAddress,
             _tokenId,

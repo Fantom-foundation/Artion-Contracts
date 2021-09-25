@@ -38,6 +38,9 @@ contract FantomAddressRegistry is Ownable {
     /// @notice FantomPriceFeed contract
     address public priceFeed;
 
+    /// @notice FantomNFTOracle contract
+    address public nftOracle;
+
     /**
      @notice Update artion contract
      @dev Only admin
@@ -129,5 +132,13 @@ contract FantomAddressRegistry is Ownable {
      */
     function updatePriceFeed(address _priceFeed) external onlyOwner {
         priceFeed = _priceFeed;
+    }
+
+    /**
+     @notice Update nft oracle contract
+     @dev Only admin
+     */
+    function updateNftOracle(address _nftOracle) external onlyOwner {
+        nftOracle = _nftOracle;
     }
 }
