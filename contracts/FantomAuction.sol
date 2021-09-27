@@ -311,9 +311,12 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
         uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
+        if (minBidRequired < auction.reservePrice) {
+            minBidRequired = auction.reservePrice;
+        }
         require(
             _bidAmount >= minBidRequired,
-            "failed to outbid highest bidder"
+            "bid is too low"
         );
         if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
@@ -434,7 +437,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         uint256 payAmount;
 
-        if (winningBid > auction.reservePrice) {
+        if (winningBid >= auction.reservePrice) {
             // Work out total above the reserve
             uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
 
@@ -463,34 +466,18 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             // Send remaining to designer
             payAmount = winningBid.sub(platformFeeAboveReserve);
         } else {
-            payAmount = winningBid;
+            payAmount = 0;
+            winningBid = 0;
+            winner = address(0);
         }
 
-        IFantomMarketplace marketplace = IFantomMarketplace(
-            addressRegistry.marketplace()
-        );
-        address minter = marketplace.minters(_nftAddress, _tokenId);
-        uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
-        if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = payAmount.mul(royalty).div(100);
-            if (auction.payToken == address(0)) {
-                (bool royaltyTransferSuccess, ) = payable(minter).call{
-                    value: royaltyFee
-                }("");
-                require(
-                    royaltyTransferSuccess,
-                    "failed to send the owner their royalties"
-                );
-            } else {
-                IERC20 payToken = IERC20(auction.payToken);
-                require(
-                    payToken.transfer(minter, royaltyFee),
-                    "failed to send the owner their royalties"
-                );
-            }
-            payAmount = payAmount.sub(royaltyFee);
-        } else {
-            (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
+        if (payAmount > 0) {
+            // handle the royalty payment
+            IFantomMarketplace marketplace = IFantomMarketplace(
+                addressRegistry.marketplace()
+            );
+            address minter = marketplace.minters(_nftAddress, _tokenId);
+            uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
             if (minter != address(0) && royalty != 0) {
                 uint256 royaltyFee = payAmount.mul(royalty).div(100);
                 if (auction.payToken == address(0)) {
@@ -499,19 +486,39 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     }("");
                     require(
                         royaltyTransferSuccess,
-                        "failed to send the royalties"
+                        "failed to send the owner their royalties"
                     );
                 } else {
                     IERC20 payToken = IERC20(auction.payToken);
                     require(
                         payToken.transfer(minter, royaltyFee),
-                        "failed to send the royalties"
+                        "failed to send the owner their royalties"
                     );
                 }
                 payAmount = payAmount.sub(royaltyFee);
+            } else {
+                (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
+                if (minter != address(0) && royalty != 0) {
+                    uint256 royaltyFee = payAmount.mul(royalty).div(100);
+                    if (auction.payToken == address(0)) {
+                        (bool royaltyTransferSuccess, ) = payable(minter).call{
+                            value: royaltyFee
+                        }("");
+                        require(
+                            royaltyTransferSuccess,
+                            "failed to send the royalties"
+                        );
+                    } else {
+                        IERC20 payToken = IERC20(auction.payToken);
+                        require(
+                            payToken.transfer(minter, royaltyFee),
+                            "failed to send the royalties"
+                        );
+                    }
+                    payAmount = payAmount.sub(royaltyFee);
+                }
             }
-        }
-        if (payAmount > 0) {
+            // transfer the winner's tokens to the auction owner
             if (auction.payToken == address(0)) {
                 (bool ownerTransferSuccess, ) = auction.owner.call{
                     value: payAmount
@@ -527,17 +534,16 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     "failed to send the owner the auction balance"
                 );
             }
+            // Transfer the auction owner's token to the winner
+            IERC721(_nftAddress).safeTransferFrom(
+                IERC721(_nftAddress).ownerOf(_tokenId),
+                winner,
+                _tokenId
+            );
+
+            IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+                .validateItemSold(_nftAddress, _tokenId, uint256(1));
         }
-
-        // Transfer the token to the winner
-        IERC721(_nftAddress).safeTransferFrom(
-            IERC721(_nftAddress).ownerOf(_tokenId),
-            winner,
-            _tokenId
-        );
-
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
         emit AuctionResulted(
             _nftAddress,
