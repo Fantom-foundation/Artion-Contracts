@@ -298,6 +298,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _getNow() >= auction.startTime && _getNow() <= auction.endTime,
             "bidding outside of the auction window"
         );
+        require(auction.payToken != address(0), "ERC20 method used for FTM auction");
 
         _placeBid(_nftAddress, _tokenId, _bidAmount);
     }
