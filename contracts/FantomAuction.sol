@@ -521,7 +521,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
                 require(
-                    payToken.transferFrom(address(this), minter, royaltyFee),
+                    //payToken.transferFrom(address(this), minter, royaltyFee),
+                    payToken.transfer(minter, royaltyFee),
                     "failed to send the owner their royalties"
                 );
             }

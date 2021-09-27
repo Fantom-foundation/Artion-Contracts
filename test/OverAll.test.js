@@ -143,8 +143,10 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
 
             console.log(`
             *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
-            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases`);
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
             expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
 
             console.log(`
             *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
@@ -242,6 +244,166 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer]
             *The wFTM balance of the artist should be 19 wFTMs`);
             expect(weiToEther(balance)*1).to.be.equal(19);
 
+            listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
+            //console.log('listing: ', listing);
+            console.log(`
+            *The nft now should be removed from the listing`);            
+            expect(listing.quantity.toString()).to.be.equal('0');
+            expect(listing.payToken).to.be.equal(constants.ZERO_ADDRESS);
+            expect(weiToEther(listing.pricePerItem)*1).to.be.equal(0);
+            expect(listing.startingTime.toString()).to.be.equal('0');
+
+            console.log('');
+        });
+
+
+        it('Scenario 2', async function(){
+
+            console.log(`
+            Scenario 2:
+            An artist mints an NFT for him/herself
+            He/She then put it on the marketplace with price of 20 FTMs
+            A buyer then buys that NFT
+            `);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art2.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art2.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art2.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the market`);
+            await this.artion.setApprovalForAll(this.fantomMarketplace.address, true, {from: artist});
+
+            console.log(`
+            The artist lists the nft in the market with price 20 FTMs and starting time 2021-09-22 10:00:00 GMT`);
+            await this.fantomListingMarketplace.listItem(
+                    this.artion.address,
+                    new BN('1'),
+                    new BN('1'),
+                    constants.ZERO_ADDRESS,
+                    ether('20'),
+                    new BN('1632304800'), // 2021-09-22 10:00:00 GMT
+                    { from : artist }
+                    );
+
+            let listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
+            console.log(`
+            *The nft should be on the marketplace listing`);
+            expect(listing.quantity.toString()).to.be.equal('1');
+            expect(listing.payToken).to.be.equal(constants.ZERO_ADDRESS);
+            expect(weiToEther(listing.pricePerItem)*1).to.be.equal(20);
+            expect(listing.startingTime.toString()).to.be.equal('1632304800');
+
+            balance1 = await web3.eth.getBalance(buyer);
+            console.log(`
+            The buyer's FTM balance before buying: ${weiToEther(balance1)}`);
+
+            balance2 = await web3.eth.getBalance(artist);
+            console.log(`
+            The artist's FTM balance before the nfts is sold: ${weiToEther(balance2)}`);
+
+            balance3 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            The platform fee recipient before the nft is sold: ${weiToEther(balance3)}`);
+
+            console.log(`
+            Buyer buys the nft for 20 FTMs`);
+            result = await this.fantomMarketplace.buyItem(
+                this.artion.address, 
+                new BN('1'), 
+                artist, 
+                { from: buyer, value: ether('20')});
+
+            console.log(`
+            *Event ItemSold should be emitted with correct values: 
+            seller = ${artist}, 
+            buyer = ${buyer}, 
+            nft = ${this.artion.address},
+            tokenId = 1,
+            quantity =1,
+            payToken = ${constants.ZERO_ADDRESS},
+            unitPrice = 0,
+            pricePerItem = 20`);
+            expectEvent.inLogs(result.logs, 'ItemSold',{
+                seller: artist,
+                buyer: buyer,
+                nft : this.artion.address,
+                tokenId : new BN('1'),
+                quantity : new BN('1'),
+                payToken : constants.ZERO_ADDRESS,
+                unitPrice : ether('0'),
+                pricePerItem : ether('20')
+            });
+
+            balance4 = await web3.eth.getBalance(buyer);
+            console.log(`
+            The buyer's FTM balance after buying: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the buyer's FTM balance should be more than 20 FTM as buying costs some gases
+            but should be less than 21 FTM as the gas shouldn't cost more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance4)*1).to.be.greaterThan(20);
+            expect(weiToEther(balance1)*1 - weiToEther(balance4)*1).to.be.lessThan(21);
+
+            let balance5 = await web3.eth.getBalance(artist);
+            console.log(`
+            The artist's FTM balance after the nfts is sold: ${weiToEther(balance5)}`);
+            console.log(`
+            *The difference of the artist's FTM balance should be 19 FTM`);
+            expect(weiToEther(balance5)*1 - weiToEther(balance2)*1).to.be.equal(19);
+
+            balance6 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            The platform fee recipient after the nft is sold: ${weiToEther(balance6)}`); 
+            console.log(`
+            *The difference of the platform fee recipient's FTM balance should be 1 FTM`);
+            expect(weiToEther(balance6)*1 - weiToEther(balance3)*1).to.be.equal(1); 
+                      
+            
             listing = await this.fantomListingMarketplace.listings(this.artion.address, new BN('1'), artist);
             //console.log('listing: ', listing);
             console.log(`
