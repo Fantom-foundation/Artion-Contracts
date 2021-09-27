@@ -312,12 +312,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
         uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
-        if (minBidRequired < auction.reservePrice) {
-            minBidRequired = auction.reservePrice;
-        }
         require(
             _bidAmount >= minBidRequired,
-            "bid is too low"
+            "failed to outbid highest bidder"
         );
         if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
@@ -421,10 +418,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address payable winner = highestBid.bidder;
         uint256 winningBid = highestBid.bid;
 
-        if (winningBid == 0 || winningBid < auction.reservePrice) {
-            _cancelAuction(_nftAddress, _tokenId);
-            return;
-        }
+        // Ensure there is a winner
+        require(winner != address(0), "no open bids");
+        require(winningBid >= auction.reservePrice, "highest bid is below reservePrice");
 
         // Ensure this contract is approved to move the token
         require(
@@ -432,108 +428,110 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "auction not approved"
         );
 
-        // Ensure there is a winner
-        require(winner != address(0), "no open bids");
-
         // Result the auction
         auction.resulted = true;
 
         // Clean up the highest bid
         delete highestBids[_nftAddress][_tokenId];
 
-        // Work out total above the reserve
-        uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
+        uint256 payAmount;
 
-        // Work out platform fee from above reserve amount
-        uint256 platformFeeAboveReserve = aboveReservePrice
-        .mul(platformFee)
-        .div(1000);
+        if (winningBid > auction.reservePrice) {
+            // Work out total above the reserve
+            uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
 
-        if (auction.payToken == address(0)) {
-            // Send platform fee
-            (bool platformTransferSuccess, ) = platformFeeRecipient.call{
-            value: platformFeeAboveReserve
-            }("");
-            require(platformTransferSuccess, "failed to send platform fee");
+            // Work out platform fee from above reserve amount
+            uint256 platformFeeAboveReserve = aboveReservePrice
+                .mul(platformFee)
+                .div(1000);
+
+            if (auction.payToken == address(0)) {
+                // Send platform fee
+                (bool platformTransferSuccess, ) = platformFeeRecipient.call{
+                    value: platformFeeAboveReserve
+                }("");
+                require(platformTransferSuccess, "failed to send platform fee");
+            } else {
+                IERC20 payToken = IERC20(auction.payToken);
+                require(
+                    payToken.transfer(
+                        platformFeeRecipient,
+                        platformFeeAboveReserve
+                    ),
+                    "failed to send platform fee"
+                );
+            }
+
+            // Send remaining to designer
+            payAmount = winningBid.sub(platformFeeAboveReserve);
         } else {
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(
-                    platformFeeRecipient,
-                    platformFeeAboveReserve
-                ),
-                "failed to send platform fee"
-            );
+            payAmount = winningBid;
         }
 
-        // Send remaining to designer
-        uint256 payAmount = winningBid.sub(platformFeeAboveReserve);
-
-        // handle the royalty payment
         IFantomMarketplace marketplace = IFantomMarketplace(
             addressRegistry.marketplace()
         );
-        {
-            address minter = marketplace.minters(_nftAddress, _tokenId);
-            uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
+        address minter = marketplace.minters(_nftAddress, _tokenId);
+        uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
+        if (minter != address(0) && royalty != 0) {
+            uint256 royaltyFee = payAmount.mul(royalty).div(100);
+            if (auction.payToken == address(0)) {
+                (bool royaltyTransferSuccess, ) = payable(minter).call{
+                    value: royaltyFee
+                }("");
+                require(
+                    royaltyTransferSuccess,
+                    "failed to send the owner their royalties"
+                );
+            } else {
+                IERC20 payToken = IERC20(auction.payToken);
+                require(
+                    payToken.transfer(minter, royaltyFee),
+                    "failed to send the owner their royalties"
+                );
+            }
+            payAmount = payAmount.sub(royaltyFee);
+        } else {
+            (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
             if (minter != address(0) && royalty != 0) {
                 uint256 royaltyFee = payAmount.mul(royalty).div(100);
                 if (auction.payToken == address(0)) {
                     (bool royaltyTransferSuccess, ) = payable(minter).call{
-                    value: royaltyFee
+                        value: royaltyFee
                     }("");
                     require(
                         royaltyTransferSuccess,
-                        "failed to send the owner their royalties"
+                        "failed to send the royalties"
                     );
                 } else {
                     IERC20 payToken = IERC20(auction.payToken);
                     require(
                         payToken.transfer(minter, royaltyFee),
-                        "failed to send the owner their royalties"
+                        "failed to send the royalties"
                     );
                 }
                 payAmount = payAmount.sub(royaltyFee);
-            } else {
-                (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
-                if (minter != address(0) && royalty != 0) {
-                    uint256 royaltyFee = payAmount.mul(royalty).div(100);
-                    if (auction.payToken == address(0)) {
-                        (bool royaltyTransferSuccess, ) = payable(minter).call{
-                        value: royaltyFee
-                        }("");
-                        require(
-                            royaltyTransferSuccess,
-                            "failed to send the royalties"
-                        );
-                    } else {
-                        IERC20 payToken = IERC20(auction.payToken);
-                        require(
-                            payToken.transfer(minter, royaltyFee),
-                            "failed to send the royalties"
-                        );
-                    }
-                    payAmount = payAmount.sub(royaltyFee);
-                }
             }
         }
-        // transfer the winner's tokens to the auction owner
-        if (auction.payToken == address(0)) {
-            (bool ownerTransferSuccess, ) = auction.owner.call{
-                value: payAmount
-            }("");
-            require(
-                ownerTransferSuccess,
-                "failed to send the owner the auction balance"
-            );
-        } else {
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(auction.owner, payAmount),
-                "failed to send the owner the auction balance"
-            );
+        if (payAmount > 0) {
+            if (auction.payToken == address(0)) {
+                (bool ownerTransferSuccess, ) = auction.owner.call{
+                    value: payAmount
+                }("");
+                require(
+                    ownerTransferSuccess,
+                    "failed to send the owner the auction balance"
+                );
+            } else {
+                IERC20 payToken = IERC20(auction.payToken);
+                require(
+                    payToken.transfer(auction.owner, payAmount),
+                    "failed to send the owner the auction balance"
+                );
+            }
         }
-        // Transfer the auction owner's token to the winner
+
+        // Transfer the token to the winner
         IERC721(_nftAddress).safeTransferFrom(
             IERC721(_nftAddress).ownerOf(_tokenId),
             winner,
