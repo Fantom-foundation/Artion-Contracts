@@ -424,7 +424,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Get info on who the highest bidder is
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
+        address payable winner = highestBid.bidder;
         uint256 winningBid = highestBid.bid;
 
         // Ensure there is a winner
@@ -467,6 +467,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             // Send remaining to designer
             payAmount = winningBid.sub(platformFeeAboveReserve);
         } else {
+            if (winningBid != 0) {
+                _refundHighestBidder(_nftAddress, _tokenId, winner, winningBid);
+            }
             payAmount = 0;
             winningBid = 0;
             winner = address(0);
