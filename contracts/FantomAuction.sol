@@ -102,7 +102,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 bid
     );
 
-    event TransferBid(
+    event BidWithdrawn(
         address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed bidder,
@@ -342,12 +342,12 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     @notice Allows the hightest bidder to withdraw the bid (after 12 hours) 
+     @notice Allows the hightest bidder to withdraw the bid (after 12 hours post auction's end) 
      @dev Only callable by the existing top bidder
      @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the item being auctioned
      */
-    function transferBidOut(address _nftAddress, uint256 _tokenId)
+    function withdrawBid(address _nftAddress, uint256 _tokenId)
         external
         nonReentrant
         whenNotPaused
@@ -364,7 +364,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(
             _getNow() > _endTime && (_getNow() - _endTime >= 43200),
-            "can transfer only after 12 hours (after auction ended)"
+            "can withdraw only after 12 hours (after auction ended)"
         );
 
         uint256 previousBid = highestBid.bid;
@@ -375,7 +375,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // Refund the top bidder
         _refundHighestBidder(_nftAddress, _tokenId, _msgSender(), previousBid);
 
-        emit TransferBid(_nftAddress, _tokenId, _msgSender(), previousBid);
+        emit BidWithdrawn(_nftAddress, _tokenId, _msgSender(), previousBid);
     }
 
     //////////
@@ -383,7 +383,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     //////////
 
     /**
-     @notice Results a finished auction
+     @notice Closes a finished auction and rewards the highest bidder
      @dev Only admin or smart contract
      @dev Auction can only be resulted if there has been a bidder and reserve met.
      @dev If there have been no bids, the auction needs to be cancelled instead using `cancelAuction()`
@@ -628,6 +628,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
         require(_msgSender() == auction.owner, "sender must be item owner");
+
+        // Ensure auction not already resulted
+        require(!auction.resulted, "auction already resulted");
+
         require(auction.endTime > 0, "no auction exists");
 
         auction.reservePrice = _reservePrice;
@@ -655,6 +659,16 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
         require(_msgSender() == auction.owner, "sender must be owner");
+
+        require(_startTime > 0, "invalid start time");
+
+        require(auction.startTime + 60 > _getNow(), "auction already started");
+
+        require(_startTime + 300 < auction.endTime, "auction already ended");
+
+        // Ensure auction not already resulted
+        require(!auction.resulted, "auction already resulted");
+
         require(auction.endTime > 0, "no auction exists");
 
         auction.startTime = _startTime;
@@ -686,7 +700,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             auction.startTime < _endTimestamp,
             "end time must be greater than start"
         );
-        require(_endTimestamp > _getNow(), "invalid end time");
+        require(
+            _endTimestamp > _getNow() + 300,
+            "auction should end after 5 minutes"
+        );
 
         auction.endTime = _endTimestamp;
         emit UpdateAuctionEndTime(_nftAddress, _tokenId, _endTimestamp);
@@ -807,10 +824,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Check end time not before start time and that end is in the future
         require(
-            _endTimestamp > _startTimestamp,
+            _endTimestamp > _startTimestamp + 300,
             "end time must be greater than start"
         );
-        require(_endTimestamp > _getNow(), "invalid end time");
+
+        require(_startTimestamp > _getNow(), "invalid start time");
 
         // Setup the auction
         auctions[_nftAddress][_tokenId] = Auction({
