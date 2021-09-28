@@ -117,6 +117,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
 
     event AuctionResulted(
+        address oldOwner,
         address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed winner,
@@ -298,7 +299,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _getNow() >= auction.startTime && _getNow() <= auction.endTime,
             "bidding outside of the auction window"
         );
-        require(auction.payToken != address(0), "ERC20 method used for FTM auction");
+        require(
+            auction.payToken != address(0),
+            "ERC20 method used for FTM auction"
+        );
 
         _placeBid(_nftAddress, _tokenId, _bidAmount);
     }
@@ -420,7 +424,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Ensure there is a winner
         require(winner != address(0), "no open bids");
-        require(winningBid >= auction.reservePrice, "highest bid is below reservePrice");
+        require(
+            winningBid >= auction.reservePrice,
+            "highest bid is below reservePrice"
+        );
 
         // Ensure this contract is approved to move the token
         require(
@@ -541,7 +548,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
+        // Remove auction
+        delete auctions[_nftAddress][_tokenId];
+
         emit AuctionResulted(
+            _msgSender(),
             _nftAddress,
             _tokenId,
             winner,
@@ -666,7 +677,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(auction.startTime + 60 > _getNow(), "auction already started");
 
-        require(_startTime + 300 < auction.endTime, "auction already ended");
+        require(
+            _startTime + 300 < auction.endTime,
+            "start time should be less than end time (by 5 minutes)"
+        );
 
         // Ensure auction not already resulted
         require(!auction.resulted, "auction already resulted");
@@ -826,8 +840,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Check end time not before start time and that end is in the future
         require(
-            _endTimestamp > _startTimestamp + 300,
-            "end time must be greater than start"
+            _endTimestamp >= _startTimestamp + 300,
+            "end time must be greater than start (by 5 minutes)"
         );
 
         require(_startTimestamp > _getNow(), "invalid start time");
