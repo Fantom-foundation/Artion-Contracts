@@ -117,6 +117,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
 
     event AuctionResulted(
+        address indexed oldOwner,
         address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed winner,
@@ -298,7 +299,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _getNow() >= auction.startTime && _getNow() <= auction.endTime,
             "bidding outside of the auction window"
         );
-        require(auction.payToken != address(0), "ERC20 method used for FTM auction");
+        require(
+            auction.payToken != address(0),
+            "ERC20 method used for FTM auction"
+        );
 
         _placeBid(_nftAddress, _tokenId, _bidAmount);
     }
@@ -420,7 +424,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Ensure there is a winner
         require(winner != address(0), "no open bids");
-        require(winningBid >= auction.reservePrice, "highest bid is below reservePrice");
+        require(
+            winningBid >= auction.reservePrice,
+            "highest bid is below reservePrice"
+        );
 
         // Ensure this contract is approved to move the token
         require(
@@ -542,6 +549,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
         emit AuctionResulted(
+            _msgSender(),
             _nftAddress,
             _tokenId,
             winner,
