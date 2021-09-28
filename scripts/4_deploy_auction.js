@@ -10,33 +10,33 @@ async function main() {
   await auctionImpl.deployed();
   console.log('FantomAuction deployed to:', auctionImpl.address);
 
-  const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory(
-    'AdminUpgradeabilityProxy'
-  );
+  // const AdminUpgradeabilityProxyFactory = await ethers.getContractFactory(
+  //   'AdminUpgradeabilityProxy'
+  // );
 
-  // Mainnet
-  const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
-    auctionImpl.address,
-    PROXY_ADDRESS_MAINNET,
-    []
-  );
-
-  // Testnet
+  // // Mainnet
   // const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
   //   auctionImpl.address,
-  //   PROXY_ADDRESS_TESTNET,
+  //   PROXY_ADDRESS_MAINNET,
   //   []
   // );
 
-  await auctionProxy.deployed();
-  console.log('Auction Proxy deployed at ', auctionProxy.address);
+  // // Testnet
+  // // const auctionProxy = await AdminUpgradeabilityProxyFactory.deploy(
+  // //   auctionImpl.address,
+  // //   PROXY_ADDRESS_TESTNET,
+  // //   []
+  // // );
 
-  const auction = await ethers.getContractAt(
-    'FantomAuction',
-    auctionProxy.address
-  );
-  await auction.initialize(TREASURY_ADDRESS);
-  console.log('Auction Proxy initialized');
+  // await auctionProxy.deployed();
+  // console.log('Auction Proxy deployed at ', auctionProxy.address);
+
+  // const auction = await ethers.getContractAt(
+  //   'FantomAuction',
+  //   auctionProxy.address
+  // );
+  // await auction.initialize(TREASURY_ADDRESS);
+  // console.log('Auction Proxy initialized');
 }
 
 // We recommend this pattern to be able to use async/await everywhere

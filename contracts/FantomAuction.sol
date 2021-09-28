@@ -117,7 +117,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
 
     event AuctionResulted(
-        address indexed oldOwner,
+        address oldOwner,
         address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed winner,
