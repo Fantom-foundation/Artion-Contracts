@@ -548,6 +548,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
+        // Remove auction
+        delete auctions[_nftAddress][_tokenId];
+
         emit AuctionResulted(
             _msgSender(),
             _nftAddress,
@@ -674,7 +677,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(auction.startTime + 60 > _getNow(), "auction already started");
 
-        require(_startTime + 300 < auction.endTime, "auction already ended");
+        require(
+            _startTime + 300 < auction.endTime,
+            "start time should be less than end time (by 5 minutes)"
+        );
 
         // Ensure auction not already resulted
         require(!auction.resulted, "auction already resulted");
@@ -834,8 +840,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Check end time not before start time and that end is in the future
         require(
-            _endTimestamp > _startTimestamp + 300,
-            "end time must be greater than start"
+            _endTimestamp >= _startTimestamp + 300,
+            "end time must be greater than start (by 5 minutes)"
         );
 
         require(_startTimestamp > _getNow(), "invalid start time");
