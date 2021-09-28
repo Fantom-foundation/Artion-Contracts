@@ -548,9 +548,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
 
-        // Remove auction
-        delete auctions[_nftAddress][_tokenId];
-
         emit AuctionResulted(
             _msgSender(),
             _nftAddress,
@@ -562,6 +559,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             ),
             winningBid
         );
+
+        // Remove auction
+        delete auctions[_nftAddress][_tokenId];
     }
 
     /**
