@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./interface/IFantomAddressRegistry.sol";
+import "./interface/IFantomListingMarketplace.sol";
 import "./interface/IFantomMarketplace.sol";
 //import "./interface/IFantomBundleMarketplace.sol";
 import "./interface/IFantomOfferBundleMarketplace.sol";
@@ -479,7 +480,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 .mul(platformFee)
                 .div(1000);
 
-            if (auction.payToken == address(0)) {
+            /*if (auction.payToken == address(0)) {
                 // Send platform fee
                 (bool platformTransferSuccess, ) = platformFeeRecipient.call{
                     value: platformFeeAboveReserve
@@ -495,8 +496,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     ),
                     "failed to send platform fee"
                 );
-            }
-
+            }*/
+            fantomBid.transfer(platformFeeRecipient, auction.payToken, platformFeeAboveReserve, "failed to send platform fee");
+            
             // Send remaining to designer
             payAmount = winningBid.sub(platformFeeAboveReserve);
         } else {
@@ -510,7 +512,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
         if (minter != address(0) && royalty != 0) {
             uint256 royaltyFee = payAmount.mul(royalty).div(100);
-            if (auction.payToken == address(0)) {
+            /*if (auction.payToken == address(0)) {
                 (bool royaltyTransferSuccess, ) = payable(minter).call{
                     value: royaltyFee
                 }("");
@@ -525,13 +527,14 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     payToken.transfer(minter, royaltyFee),
                     "failed to send the owner their royalties"
                 );
-            }
+            }*/
+            fantomBid.transfer(minter, auction.payToken, royaltyFee, "failed to send the owner their royalties");
             payAmount = payAmount.sub(royaltyFee);
         } else {
             (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
             if (minter != address(0) && royalty != 0) {
                 uint256 royaltyFee = payAmount.mul(royalty).div(100);
-                if (auction.payToken == address(0)) {
+                /*if (auction.payToken == address(0)) {
                     (bool royaltyTransferSuccess, ) = payable(minter).call{
                         value: royaltyFee
                     }("");
@@ -549,12 +552,13 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                         ),
                         "failed to send the royalties"
                     );
-                }
+                }*/
+                fantomBid.transfer(minter, auction.payToken, royaltyFee, "failed to send the royalties");
                 payAmount = payAmount.sub(royaltyFee);
             }
         }
         if (payAmount > 0) {
-            if (auction.payToken == address(0)) {
+            /*if (auction.payToken == address(0)) {
                 (bool ownerTransferSuccess, ) = auction.owner.call{
                     value: payAmount
                 }("");
@@ -572,7 +576,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     ),
                     "failed to send the owner the auction balance"
                 );
-            }
+            }*/
+            fantomBid.transfer(auction.owner, auction.payToken, payAmount, "failed to send the owner the auction balance");
         }
 
         // Transfer the token to the winner
@@ -591,7 +596,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             winner,
             auction.payToken,
-            IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken),
+            IFantomListingMarketplace(addressRegistry.listingMarketplace()).getPrice(auction.payToken),
             winningBid
         );
     }
@@ -927,10 +932,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      * @dev Only access controls admin
      * @param _tokenContract The address of the token contract
      */
-    function reclaimERC20(address _tokenContract) external onlyOwner {
+    /*function reclaimERC20(address _tokenContract) external onlyOwner {
         require(_tokenContract != address(0), "Invalid address");
         IERC20 token = IERC20(_tokenContract);
         uint256 balance = token.balanceOf(address(this));
         require(token.transfer(_msgSender(), balance), "Transfer failed");
-    }
+    }*/
 }

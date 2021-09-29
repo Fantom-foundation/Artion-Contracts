@@ -20,7 +20,9 @@ contract FantomAddressRegistry is Ownable {
     /// @notice FantomOfferMarketplace contract
     address public offerMarketplace;
    
-
+   /// @notice FantomListingMarketplace contract
+    address public listingMarketplace;
+   
     /// @notice FantomBundleMarketplace contract
     address public bundleMarketplace;
 
@@ -79,6 +81,14 @@ contract FantomAddressRegistry is Ownable {
      */
     function updateOfferMarketplace(address _offerMarketplace) external onlyOwner {
         offerMarketplace = _offerMarketplace;
+    }
+
+    /**
+     @notice Update ListingMOfferarketplace contract
+     @dev Only admin
+     */
+    function updateListingMarketplace(address _listingMarketplace) external onlyOwner {
+        listingMarketplace = _listingMarketplace;
     }
     
     /**

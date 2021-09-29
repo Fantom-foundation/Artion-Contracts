@@ -16,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 import "./interface/IFantomAddressRegistry.sol";
 import "./interface/IFantomMarketplace.sol";
+import "./interface/IFantomListingMarketplace.sol";
 import "./interface/IFantomOfferMarketplace.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomListingBundleMarketplace.sol";
@@ -482,7 +483,7 @@ contract FantomBundleMarketplace is
             _msgSender(),
             _bundleID,
             _payToken,
-            IFantomMarketplace(addressRegistry.marketplace()).getPrice(_payToken),
+            IFantomListingMarketplace(addressRegistry.listingMarketplace()).getPrice(_payToken),
             price
         );
 

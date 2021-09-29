@@ -16,7 +16,7 @@ interface IFantomMarketplace {
             address
         );
 
-    function getPrice(address) external view returns (int256);
+    //function getPrice(address) external view returns (int256);
 
     function platformFee() external view returns(uint16);
 

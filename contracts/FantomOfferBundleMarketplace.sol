@@ -16,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 
 import "./interface/IFantomAddressRegistry.sol";
 import "./interface/IFantomMarketplace.sol";
+import "./interface/IFantomListingMarketplace.sol";
 import "./interface/IFantomOfferMarketplace.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomBundleMarketplace.sol";
@@ -240,7 +241,7 @@ OwnableUpgradeable,
             _creator,
             _bundleID,
             address(offer.payToken),
-            IFantomMarketplace(addressRegistry.marketplace()).getPrice(address(offer.payToken)),
+            IFantomListingMarketplace(addressRegistry.listingMarketplace()).getPrice(address(offer.payToken)),
             offer.price
         );
         emit OfferCanceled(_creator, _bundleID);
@@ -252,6 +253,10 @@ OwnableUpgradeable,
 
     function emitOfferCanceledEvent(address creator, string memory bundleID) external onlyFantomBundleMarketplace{
         emit OfferCanceled(creator, bundleID);
+    }
+
+    function test() external {
+
     }
 
     /**

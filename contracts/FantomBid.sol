@@ -991,4 +991,21 @@ contract FantomBid is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             delete highestBids[_nftAddress][_tokenId];
         }
     }
+
+    function transfer(address to, address payToken, uint256 amount, string memory revertMessage) external onlyFantomAuction {
+        if(payToken == address(0)){
+            (bool transferSuccess, ) = payable(to).call{
+                    value: amount
+                }("");
+                require(
+                    transferSuccess,
+                    revertMessage
+                );
+        }else {
+            IERC20 iERC20 = IERC20(payToken);
+            require(iERC20.transfer(to, amount),
+                    revertMessage
+                );
+        }
+    }    
 }

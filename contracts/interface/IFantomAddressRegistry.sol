@@ -8,6 +8,8 @@ interface IFantomAddressRegistry {
     function marketplace() external view returns (address);
     
     function offerMarketplace() external view returns (address);
+     
+    function listingMarketplace() external view returns (address);
 
     function bundleMarketplace() external view returns (address);
 

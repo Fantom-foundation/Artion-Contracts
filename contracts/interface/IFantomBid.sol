@@ -13,4 +13,7 @@ interface IFantomBid {
     function deleteHighestBidder(address _nftAddress, uint256 _tokenId) external;
 
     function refundHighestBidder(address _nftAddress, uint256 _tokenId) external;
+
+    function transfer(address to, address payToken, uint256 amount, string memory revertMessage) external;
+
 }

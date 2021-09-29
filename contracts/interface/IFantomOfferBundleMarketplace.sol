@@ -14,4 +14,6 @@ interface IFantomOfferBundleMarketplace {
         uint256 quantity
     ) external;
 
+    function test() external;
+
 }
