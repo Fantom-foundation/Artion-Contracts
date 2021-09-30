@@ -305,6 +305,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             IFantomListingMarketplace(addressRegistry.listingMarketplace()).getPrice(auction.payToken),
             winningBid
         );
+
+        // Remove auction
+        delete auctions[_nftAddress][_tokenId];
     }
 
     /**
