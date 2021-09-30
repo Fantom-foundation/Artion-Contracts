@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./interface/IFantomAddressRegistry.sol";
-//import "./interface/IFantomBundleMarketplace.sol";
 import "./interface/IFantomOfferBundleMarketplace.sol";
 import "./interface/IFantomNFTFactory.sol";
 import "./interface/IFantomTokenRegistry.sol";
@@ -78,13 +77,7 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     /// @notice FantomMarketplace
     IFantomListingMarketplace public fantomListingMarketplace;
-
-    /*address payable private feeReceipient;
-
-    uint16 private platformFee;
-
-    uint256 private royaltyFee;*/
-
+    
     modifier offerNotExists(
         address _nftAddress,
         uint256 _tokenId,
@@ -218,51 +211,31 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         }
 
         Misc memory misc; // use struct to resolve 'Stack too deep'
-        //uint256 price = offer.pricePerItem.mul(offer.quantity);
         misc.price = offer.pricePerItem.mul(offer.quantity);
-        // get the value of platformFee from FantomMarketplace
         misc.platformFee = fantomMarketplace.platformFee();
-        //uint256 feeAmount = price.mul(platformFee).div(1e3);
         uint256 feeAmount = misc.price.mul(misc.platformFee).div(1e3);
-        //uint256 royaltyFee;
 
         // get the value of feeReceipient from FantomMarketplace
         misc.feeReceipient = fantomMarketplace.feeReceipient(); 
-        //offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
-        offer.payToken.safeTransferFrom(_creator, misc.feeReceipient, feeAmount);
-        //replace with a function call from FantomMarketplace
-        //address minter = minters[_nftAddress][_tokenId];
+        offer.payToken.safeTransferFrom(_creator, misc.feeReceipient, feeAmount);        
         address minter = fantomMarketplace.minters(_nftAddress, _tokenId);
-        //replace with a function call from FantomMarketplace        
-        //uint16 royalty = royalties[_nftAddress][_tokenId];        
         uint16 royalty = fantomMarketplace.royalties(_nftAddress, _tokenId);
         if (minter != address(0) && royalty != 0) {
-            //royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
             misc.royaltyFee = misc.price.sub(feeAmount).mul(royalty).div(10000);
-            //offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
             offer.payToken.safeTransferFrom(_creator, minter, misc.royaltyFee);
-            //feeAmount = feeAmount.add(royaltyFee);
             feeAmount = feeAmount.add(misc.royaltyFee);
         } else {
-            // replace with a function call from FantomMarketplace
-            //minter = collectionRoyalties[_nftAddress].feeRecipient;
             (, , minter) = fantomMarketplace.collectionRoyalties(_nftAddress);
-            // replace with a function call from FantomMarketplace
-            //royalty = collectionRoyalties[_nftAddress].royalty;
             (royalty, ,) = fantomMarketplace.collectionRoyalties(_nftAddress);
             if (minter != address(0) && royalty != 0) {
-                //royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
                 misc.royaltyFee = misc.price.sub(feeAmount).mul(royalty).div(10000);
-                //offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
                 offer.payToken.safeTransferFrom(_creator, minter, misc.royaltyFee);
-                //feeAmount = feeAmount.add(royaltyFee);
                 feeAmount = feeAmount.add(misc.royaltyFee);
             }
         }
         offer.payToken.safeTransferFrom(
             _creator,
             _msgSender(),
-           // price.sub(feeAmount)
             misc.price.sub(feeAmount)
         );
 
@@ -282,25 +255,11 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
                 bytes("")
             );
         }
-        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
         IFantomOfferBundleMarketplace(addressRegistry.offerBundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, offer.quantity);
-        // replace with function call from FantomListingMarketplace
-        //delete (listings[_nftAddress][_tokenId][_msgSender()]);
         fantomListingMarketplace.deleteListing(_nftAddress, _tokenId, _msgSender());
         delete (offers[_nftAddress][_tokenId][_creator]);
 
-        // replace with a function call from FantomMarketplace
-        /*emit ItemSold(
-            _msgSender(),
-            _creator,
-            _nftAddress,
-            _tokenId,
-            offer.quantity,
-            address(offer.payToken),
-            getPrice(address(offer.payToken)),
-            offer.pricePerItem
-        );*/
         fantomMarketplace.emitItemSoldEvent(
             _msgSender(),
             _creator,
@@ -323,14 +282,8 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         address _seller,
         address _buyer
     ) external onlyMarketplace {
-        // replace with a function call from FantomListingMarketplace
-        //Listing memory item = listings[_nftAddress][_tokenId][_seller];
         (uint256 quantity, , , ) = fantomListingMarketplace.listings(_nftAddress, _tokenId, _seller);
-        // replace with local quantity
-        //if (item.quantity > 0) {
         if (quantity > 0) {
-            // replace with a function call from FantomListingMarketplace
-            //_cancelListing(_nftAddress, _tokenId, _seller);
             fantomListingMarketplace.cancelListing(_nftAddress, _tokenId, _seller);
         }
         delete (offers[_nftAddress][_tokenId][_buyer]);

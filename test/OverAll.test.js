@@ -107,7 +107,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
 
     describe('Minting and auctioning NFT', function() {
 
-        /* it('Scenario 1', async function(){
+         it('Scenario 1', async function(){
 
             console.log(`
             Scenario 1:
@@ -835,9 +835,9 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
                 winningBid: ether('20')
             });
 
-        }) */
+        })
 
-        /* it('Scenario 5', async function() {
+        it('Scenario 5', async function() {
 
             console.log(`
             Scenario 5:
@@ -994,7 +994,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             balance = await this.mockERC20.balanceOf(platformFeeRecipient);
             expect(weiToEther(balance)*1).to.be.equal(1);
 
-        }) */
+        })
 
         it('Scenario 6', async function() {
 

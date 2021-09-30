@@ -107,19 +107,14 @@ OwnableUpgradeable,
         uint256 _price,
         uint256 _startingTime
     ) external {
-        bytes32 bundleID = _getBundleID(_bundleID);
-        // replace some places a function call from FantomBundleMarketplace
-        //bundleIds[bundleID] = _bundleID;
+        bytes32 bundleID = _getBundleID(_bundleID);        
         fantomBundleMarketplace.setBundleId(bundleID, _bundleID);
         require(
             _nftAddresses.length == _tokenIds.length &&
                 _tokenIds.length == _quantities.length,
             "invalid data"
         );
-        // replace with a function call and a local variable        
-        //require(
-            //owners[bundleID] == address(0) ||
-            //    (owners[bundleID] == _msgSender() &&
+       
         address owner = fantomBundleMarketplace.owners(bundleID);
             require(
                 owner == address(0) ||
@@ -146,7 +141,6 @@ OwnableUpgradeable,
                 IERC721 nft = IERC721(_nftAddresses[i]);
                 _check721Owning(_nftAddresses[i], _tokenIds[i], _msgSender());
                 require(
-                    //nft.isApprovedForAll(_msgSender(), address(this)),
                     nft.isApprovedForAll(_msgSender(), fantomBundleMarketplaceAddress),
                     "item not approved"
                 );
@@ -163,7 +157,6 @@ OwnableUpgradeable,
                     _msgSender()
                 );
                 require(
-                    //nft.isApprovedForAll(_msgSender(), address(this)),
                     nft.isApprovedForAll(_msgSender(), fantomBundleMarketplaceAddress),
                     "item not approved"
                 );
@@ -174,19 +167,14 @@ OwnableUpgradeable,
             }
             address _nft = _nftAddresses[i];
             listing.nfts.push(_nft);
-            listing.tokenIds.push(_tokenIds[i]);
-            // replace with function calls from FantomBundleMarketplace
-            /*bundleIdsPerItem[_nft][_tokenIds[i]].add(bundleID);
-            nftIndexes[bundleID][_nft][_tokenIds[i]] = i;*/
+            listing.tokenIds.push(_tokenIds[i]);            
             fantomBundleMarketplace.addBundleIdPerItemAndSetNftIndex(_nft, _tokenIds[i], bundleID, i);
         }
 
         listing.payToken = _payToken;
         listing.price = _price;
         listing.startingTime = _startingTime;
-        
-        //replace with function call from FantomBundleMarketplace
-        //owners[bundleID] = _msgSender();
+      
         fantomBundleMarketplace.setOwner(bundleID, _msgSender());
 
         emit ItemListed(
@@ -344,22 +332,12 @@ OwnableUpgradeable,
     function _cancelListing(address _owner, string memory _bundleID) private {
         bytes32 bundleID = _getBundleID(_bundleID);
         Listing memory listing = listings[_owner][bundleID];
-        for (uint256 i; i < listing.nfts.length; i++) {
-            //replace with a function call from FantomBundleMarketplace
-            /*bundleIdsPerItem[listing.nfts[i]][listing.tokenIds[i]].remove(
-                bundleID
-            );*/
-            fantomBundleMarketplace.removeBundleIdPerItem(listing.nfts[i], listing.tokenIds[i], bundleID);
-            //replace with a function call from FantomBundleMarketplace
-            //delete (nftIndexes[bundleID][listing.nfts[i]][listing.tokenIds[i]]);
+        for (uint256 i; i < listing.nfts.length; i++) {            
+            fantomBundleMarketplace.removeBundleIdPerItem(listing.nfts[i], listing.tokenIds[i], bundleID);            
             fantomBundleMarketplace.deleteNftIndex(bundleID, listing.nfts[i], listing.tokenIds[i]);
         }
-        delete (listings[_owner][bundleID]);
-        //replace with a function call from FantomBundleMarketplace
-        //delete (owners[bundleID]);
-        fantomBundleMarketplace.deleteOwner(bundleID);
-        //replace with a function call from FantomBundleMarketplacde
-        //delete (bundleIds[bundleID]);
+        delete (listings[_owner][bundleID]);     
+        fantomBundleMarketplace.deleteOwner(bundleID);        
         fantomBundleMarketplace.deleteBundleId(bundleID);
         emit ItemCanceled(_owner, _bundleID);
     }
