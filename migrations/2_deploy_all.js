@@ -102,6 +102,7 @@ module.exports = async function(deployer, network, accounts){
 
     await fantomAddressRegistry.updateArtion(artion.address);
     await fantomAddressRegistry.updateAuction(fantomAuction.address);
+    await fantomAddressRegistry.updateListingMarketplace(fantomListingMarketplace.address);
     await fantomAddressRegistry.updateMarketplace(fantomMarketplace.address);
     await fantomAddressRegistry.updateOfferMarketplace(fantomOfferMarketplace.address);
     await fantomAddressRegistry.updateBundleMarketplace(fantomBundleMarketplace.address);

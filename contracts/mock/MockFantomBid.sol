@@ -18,5 +18,5 @@ contract MockFantomBid is FantomBid {
     function _getNow() internal override view returns (uint256) {
         return time;
     }
-
+        
 }

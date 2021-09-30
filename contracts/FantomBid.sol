@@ -316,7 +316,7 @@ contract FantomBid is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      @param _tokenId Token ID of the item being auctioned
      @param _bidAmount Bid amount
      */
-    function placeBid(
+    function placeBidWithERC20(
         address _nftAddress,
         uint256 _tokenId,
         uint256 _bidAmount

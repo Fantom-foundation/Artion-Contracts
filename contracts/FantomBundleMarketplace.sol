@@ -345,7 +345,7 @@ contract FantomBundleMarketplace is
     /// @notice Method for buying listed NFT bundle
     /// @param _bundleID Bundle ID
     function buyItem(string memory _bundleID) external payable nonReentrant {
-        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
+        bytes32 bundleID = _getBundleID(_bundleID); //keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
         require(owner != address(0), "invalid id");
         
@@ -353,7 +353,8 @@ contract FantomBundleMarketplace is
         /*Listing memory listing = listings[owner][bundleID];
         require(listing.payToken == address(0), "invalid pay token");
         require(msg.value >= listing.price, "insufficient balance to buy");*/
-        (, , ,address payToken, uint256 price,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        //(, , ,address payToken, uint256 price,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        (, , ,address payToken, uint256 price,) = fantomListingBundleMarketplace.getListing(owner, _bundleID);
         require(payToken == address(0), "invalid pay token");
         require(msg.value >= price, "insufficient balance to buy");
 
@@ -362,31 +363,33 @@ contract FantomBundleMarketplace is
 
     /// @notice Method for buying listed NFT bundle
     /// @param _bundleID Bundle ID
-    function buyItem(string memory _bundleID, address _payToken)
+    function buyItemWithERC20(string memory _bundleID, address _payToken)
         external
         nonReentrant
     {
-        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
+        bytes32 bundleID = _getBundleID(_bundleID); //keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
         require(owner != address(0), "invalid id");
                 
         //replace with local variables and a function call from FantomListingBundleMarketplace        
         /*Listing memory listing = listings[owner][bundleID];
         require(listing.payToken == _payToken, "invalid pay token");*/
-        (, , ,address payToken, ,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        //(, , ,address payToken, ,) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        (, , ,address payToken, ,) = fantomListingBundleMarketplace.getListing(owner, _bundleID);
         require(payToken == _payToken, "invalid pay token");
 
         _buyItem(_bundleID, _payToken);
     }
 
     function _buyItem(string memory _bundleID, address _payToken) private {
-        bytes32 bundleID = /*_getBundleID(_bundleID);*/ keccak256(abi.encodePacked(_bundleID));
+        bytes32 bundleID = _getBundleID(_bundleID); // keccak256(abi.encodePacked(_bundleID));
         address owner = owners[bundleID];
 
         //replace local variables and function call from FantomListingBundleMarketplace
         //Listing memory listing = listings[owner][bundleID];
         Listing memory listing;
-        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        //(listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(owner, bundleID);
+        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.getListing(owner, _bundleID);
         require(listing.price > 0, "not listed");
 
         for (uint256 i; i < listing.nfts.length; i++) {
@@ -433,7 +436,7 @@ contract FantomBundleMarketplace is
                 price.sub(feeAmount)
             );
         }
-
+        
         // Transfer NFT to buyer
         for (uint256 i; i < listing.nfts.length; i++) {
             if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
@@ -810,11 +813,11 @@ contract FantomBundleMarketplace is
         emit ItemCanceled(_owner, _bundleID);
     }*/
 
-    /*function _getBundleID(string memory _bundleID)
+    function _getBundleID(string memory _bundleID)
         private
         pure
         returns (bytes32)
     {
         return keccak256(abi.encodePacked(_bundleID));
-    }*/
+    }
 }

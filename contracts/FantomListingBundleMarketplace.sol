@@ -248,6 +248,7 @@ OwnableUpgradeable,
             address[] memory nfts,
             uint256[] memory tokenIds,
             uint256[] memory quantities,
+            address payToken,
             uint256 price,
             uint256 startingTime
         )
@@ -256,8 +257,9 @@ OwnableUpgradeable,
         nfts = listings[_owner][bundleID].nfts;
         tokenIds = listings[_owner][bundleID].tokenIds;
         quantities = listings[_owner][bundleID].quantities;
+        payToken = listings[_owner][bundleID].payToken;
         price = listings[_owner][bundleID].price;
-        startingTime = listings[_owner][bundleID].startingTime;
+        startingTime = listings[_owner][bundleID].startingTime;         
     }
 
     function deleteListing(address owner, bytes32 bundleID) external onlyFantomBundleMarketplace{

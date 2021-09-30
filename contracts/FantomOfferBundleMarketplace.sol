@@ -187,7 +187,8 @@ OwnableUpgradeable,
         // replace with function calls from FantomListingBundleMarketplace
         //Listing memory listing = listings[_msgSender()][bundleID];
         Listing memory listing;
-        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_msgSender(), bundleID);
+        //(listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_msgSender(), bundleID);
+        (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.getListing(_msgSender(), _bundleID);
         for (uint256 i; i < listing.nfts.length; i++) {
             if (_supportsInterface(listing.nfts[i], INTERFACE_ID_ERC721)) {
                 IERC721(listing.nfts[i]).safeTransferFrom(
@@ -254,11 +255,7 @@ OwnableUpgradeable,
     function emitOfferCanceledEvent(address creator, string memory bundleID) external onlyFantomBundleMarketplace{
         emit OfferCanceled(creator, bundleID);
     }
-
-    function test() external {
-
-    }
-
+    
     /**
      * @notice Validate and cancel listing
      * @dev Only marketplace can access
@@ -281,13 +278,15 @@ OwnableUpgradeable,
             //address _owner = owners[bundleID];
             address _owner = fantomBundleMarketplace.owners(bundleID);
             if (_owner != address(0)) {
+                string memory _bundleID = fantomBundleMarketplace.bundleIds(bundleID);
                 // replace with function calls from FantomListingBundleMarketplace.sol
                 //Listing storage listing = listings[_owner][bundleID];
                 Listing memory listing;
-                (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_owner, bundleID);
+                //(listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.listings(_owner, bundleID);
+                (listing.nfts, listing.tokenIds,listing.quantities, listing.payToken, listing.price, listing.startingTime) = fantomListingBundleMarketplace.getListing(_owner, _bundleID);
                 // replace with a fucntion call from FantomBundleMarketplace
                 //string memory _bundleID = bundleIds[bundleID];
-                string memory _bundleID = fantomBundleMarketplace.bundleIds(bundleID);
+                //string memory _bundleID = fantomBundleMarketplace.bundleIds(bundleID);
                 //replace with a function call from FantomBundleMarketplace
                 //uint256 index = nftIndexes[bundleID][_nftAddress][_tokenId];
                 uint256 index = fantomBundleMarketplace.nftIndexes(bundleID,_nftAddress, _tokenId);
