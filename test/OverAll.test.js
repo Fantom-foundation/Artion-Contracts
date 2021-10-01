@@ -107,7 +107,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
 
     describe('Minting and auctioning NFT', function() {
 
-         it('Scenario 1', async function(){
+        it('Scenario 1', async function(){
 
             console.log(`
             Scenario 1:
@@ -171,7 +171,8 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             await this.artion.setApprovalForAll(this.fantomMarketplace.address, true, {from: artist});
 
             console.log(`
-            The artist lists the nft in the market with price 20 wFTM and starting time 2021-09-22 10:00:00 GMT`);
+            The artist lists the nft in the market with price 20 wFTM and 
+            starting time 2021-09-22 10:00:00 GMT`);
             await this.fantomListingMarketplace.listItem(
                     this.artion.address,
                     new BN('1'),
@@ -317,7 +318,8 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             await this.artion.setApprovalForAll(this.fantomMarketplace.address, true, {from: artist});
 
             console.log(`
-            The artist lists the nft in the market with price 20 FTMs and starting time 2021-09-22 10:00:00 GMT`);
+            The artist lists the nft in the market with price 20 FTMs and 
+            starting time 2021-09-22 10:00:00 GMT`);
             await this.fantomListingMarketplace.listItem(
                     this.artion.address,
                     new BN('1'),
@@ -919,7 +921,8 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             await this.artion.setApprovalForAll(this.fantomBundleMarketplace.address, true, {from: artist});
 
             console.log(`
-            The artist lists the 2 nfts in the bundle market with price 20 wFTM and starting time 2021-09-22 10:00:00 GMT`);
+            The artist lists the 2 nfts in the bundle market with price 20 wFTM and 
+            starting time 2021-09-22 10:00:00 GMT`);
             await this.fantomListingBundleMarketplace.listItem(
                     'mynfts',
                     [this.artion.address, this.artion.address],
@@ -950,11 +953,11 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             await this.mockERC20.mint(buyer, ether('50'));
 
             console.log(`
-            Buyer approves FantomBundleMarketplace to transfer up to 50 wFTM`);
+            The buyer approves FantomBundleMarketplace to transfer up to 50 wFTM`);
             await this.mockERC20.approve(this.fantomBundleMarketplace.address, ether('50'), {from: buyer});
 
             console.log(`
-            Buyer buys the nft for 20 wFTMs`);
+            The buyer buys the nft for 20 wFTMs`);
             result = await this.fantomBundleMarketplace.buyItemWithERC20( // function overloading doesn't work
                 'mynfts', 
                 this.mockERC20.address, 
@@ -995,7 +998,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             expect(weiToEther(balance)*1).to.be.equal(1);
 
         })
-
+ 
         it('Scenario 6', async function() {
 
             console.log(`
@@ -1074,11 +1077,12 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*2);            
 
             console.log(`
-            The artist approves the nft to the market`);
+            The artist approves the nfts to the market`);
             await this.artion.setApprovalForAll(this.fantomBundleMarketplace.address, true, {from: artist});
 
             console.log(`
-            The artist lists the 2 nfts in the bundle market with price 20 wFTM and starting time 2021-09-22 10:00:00 GMT`);
+            The artist lists the 2 nfts in the bundle market with price 20 wFTM and 
+            starting time 2021-09-22 10:00:00 GMT`);
             await this.fantomListingBundleMarketplace.listItem(
                     'mynfts',
                     [this.artion.address, this.artion.address],
