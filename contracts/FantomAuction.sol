@@ -297,18 +297,34 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         _placeBid(_nftAddress, _tokenId, _bidAmount);
     }
 
+
+    /**
+     @notice Internal method doing the heavy lifting of placing a bid on an existing auction
+     @param _nftAddress ERC 721 Address
+     @param _tokenId Token ID of the NFT being auctioned
+     @param _bidAmount Bid amount
+     */
     function _placeBid(
         address _nftAddress,
         uint256 _tokenId,
         uint256 _bidAmount
     ) internal whenNotPaused {
         Auction storage auction = auctions[_nftAddress][_tokenId];
+
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+
         uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
+
         require(
             _bidAmount >= minBidRequired,
             "failed to outbid highest bidder"
+        );
+
+        // Ensures the placed bid is greater than zero
+        require(
+            msg.value > 0,
+            "Bid must be greater than zero"
         );
 
         // Ensure this contract is the owner of the item
