@@ -310,6 +310,13 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _bidAmount >= minBidRequired,
             "failed to outbid highest bidder"
         );
+
+        // Ensure this contract is the owner of the item
+        require(
+            IERC721(_nftAddress).ownerOf(_tokenId) == address(this),
+            "address(this) must be the item owner"
+        );
+
         if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
             require(
