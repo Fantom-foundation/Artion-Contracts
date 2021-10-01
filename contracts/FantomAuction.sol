@@ -641,16 +641,24 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 _msgSender() == auction.owner,
             "sender must be owner"
         );
-        // Check auction is real
-        require(auction.endTime > 0, "no auction exists");
-        // Check auction not already resulted
-        require(!auction.resulted, "auction already resulted");
 
-        // Gets info on auction and ensures auction has no bids before cancelling
+        // Check auction is real
+        require(
+            auction.endTime > 0, 
+            "no auction exists"
+        );
+
+        // Check auction not already resulted
+        require(
+            !auction.resulted, 
+            "auction already resulted"
+        );
+
+        // Gets info on auction and ensures highest bid is less than the reserve price
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
         require(
-            highestBid.bidder == address(0),
-            "Auction currently has active bids"
+            highestBid.bid < auction.reservePrice,
+            "Highest bid is currently above reserve price"
         );
 
         _cancelAuction(_nftAddress, _tokenId);
