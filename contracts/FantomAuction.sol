@@ -141,6 +141,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice global platform fee, assumed to always be to 1 decimal place i.e. 25 = 2.5%
     uint256 public platformFee = 25;
 
+    /// @notice Used to track and set the maximum allowed auction time (_startTimestamp + maxAuctionLength)
+    uint256 public constant maxAuctionLength = 30 days; 
+
     /// @notice where to send platform fee funds to
     address payable public platformFeeRecipient;
 
@@ -219,10 +222,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "invalid pay token"
         );
 
-        // Adds hard limits to ensure the auction is <= 30 days long in total
+        // Adds hard limits to cap the maximum auction length
         require(
-            _endTimestamp <= (_startTimestamp + 30 days),
-            "Auction end date is too long"
+            _endTimestamp <= (_startTimestamp + maxAuctionLength),
+            "Auction time exceeds maximum length"
         );
 
         _createAuction(
