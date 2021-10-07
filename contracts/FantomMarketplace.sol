@@ -752,6 +752,29 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
     }
 
+    function updateCollectionRoyalty(
+        address _nftAddress,
+        address _creator,
+        uint16 _royalty,
+        address _feeRecipient
+    ) external onlyOwner {
+        require(_creator != address(0), "invalid creator address");
+        require(_royalty <= 10000, "invalid royalty");
+        require(
+            _royalty == 0 || _feeRecipient != address(0),
+            "invalid fee recipient address"
+        );
+        require(!_isFantomNFT(_nftAddress), "invalid nft address");
+
+        CollectionRoyalty storage collectionRoyalty = collectionRoyalties[
+            _nftAddress
+        ];
+
+        collectionRoyalty.royalty = _royalty;
+        collectionRoyalty.feeRecipient = _feeRecipient;
+        collectionRoyalty.creator = _creator;
+    }
+
     function _isFantomNFT(address _nftAddress) internal view returns (bool) {
         return
             addressRegistry.artion() == _nftAddress ||
