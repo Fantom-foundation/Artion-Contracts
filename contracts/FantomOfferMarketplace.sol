@@ -17,8 +17,8 @@ import "./interface/IFantomOfferBundleMarketplace.sol";
 import "./interface/IFantomNFTFactory.sol";
 import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomPriceFeed.sol";
-import "./interface/IFantomMarketPlace.sol";
-import "./interface/IFantomListingMarketPlace.sol";
+import "./interface/IFantomMarketplace.sol";
+import "./interface/IFantomListingMarketplace.sol";
 
 contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;

@@ -1,3 +1,6 @@
+// truffle test .\test\OverAll.test.js; in this case ganache has to be running
+// or
+// truffle test .\test\OverAll.test.js --network localhost; in this case run first: npx hardhat node
 const {
     expectRevert,
     expectEvent,

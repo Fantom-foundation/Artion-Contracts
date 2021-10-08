@@ -1,3 +1,7 @@
+// use this to deploy locally using truffle
+// truffle deploy ; in this case ganache has to running
+// truffle deploy --network localhost; in this case run first on another terminal: npx hardhat node
+
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const Artion = artifacts.require('Artion');
 const FantomAuction = artifacts.require('FantomAuction');
