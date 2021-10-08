@@ -246,7 +246,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         initializer
     {
         platformFee = _platformFee;
-        feeReceipient = _feeRecipient;
+        feeRecipient = _feeRecipient;
 
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -414,14 +414,14 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 price = listedItem.pricePerItem.mul(listedItem.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
         if (_payToken == address(0)) {
-            (bool feeTransferSuccess, ) = feeReceipient.call{value: feeAmount}(
+            (bool feeTransferSuccess, ) = feeRecipient.call{value: feeAmount}(
                 ""
             );
             require(feeTransferSuccess, "fee transfer failed");
         } else {
             IERC20(_payToken).safeTransferFrom(
                 _msgSender(),
-                feeReceipient,
+                feeRecipient,
                 feeAmount
             );
         }
@@ -596,7 +596,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 feeAmount = price.mul(platformFee).div(1e3);
         uint256 royaltyFee;
 
-        offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
+        offer.payToken.safeTransferFrom(_creator, feeRecipient, feeAmount);
 
         address minter = minters[_nftAddress][_tokenId];
         uint16 royalty = royalties[_nftAddress][_tokenId];
@@ -736,10 +736,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         int256 unitPrice;
         uint8 decimals;
         if (_payToken == address(0)) {
-            IFantomPriceFeed priceFeed = IFantomPriceFeed(
+            (unitPrice, decimals) = IFantomPriceFeed(
                 addressRegistry.priceFeed()
-            );
-            (unitPrice, decimals) = priceFeed.getPrice(priceFeed.wFTM());
+            ).getPrice(priceFeed.wFTM());
         } else {
             (unitPrice, decimals) = IFantomPriceFeed(
                 addressRegistry.priceFeed()
@@ -773,7 +772,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         external
         onlyOwner
     {
-        feeReceipient = _platformFeeRecipient;
+        feeRecipient = _platformFeeRecipient;
         emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
