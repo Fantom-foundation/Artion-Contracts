@@ -290,13 +290,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             revert("invalid nft address");
         }
 
-        require(
-            _payToken == address(0) ||
-                (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(_payToken)),
-            "invalid pay token"
-        );
+        _validPayToken(_payToken);
 
         listings[_nftAddress][_tokenId][_msgSender()] = Listing(
             _quantity,
@@ -341,13 +335,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         _validOwner(_nftAddress, _tokenId, _msgSender(), listedItem.quantity);
 
-        require(
-            _payToken == address(0) ||
-                (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(_payToken)),
-            "invalid pay token"
-        );
+        _validPayToken(_payToken);
 
         listedItem.payToken = _payToken;
         listedItem.pricePerItem = _newPrice;
@@ -357,6 +345,17 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             _payToken,
             _newPrice
+        );
+    }
+
+    function _validPayToken(address _payToken) external
+    {
+        require(
+            _payToken == address(0) ||
+            (addressRegistry.tokenRegistry() != address(0) &&
+            IFantomTokenRegistry(addressRegistry.tokenRegistry())
+            .enabled(_payToken)),
+            "invalid pay token"
         );
     }
 
@@ -548,13 +547,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         require(_deadline > _getNow(), "invalid expiration");
-        require(
-            address(_payToken) == address(0) ||
-                (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(address(_payToken))),
-            "invalid pay token"
-        );
+
+        _validPayToken(_payToken);
 
         offers[_nftAddress][_tokenId][_msgSender()] = Offer(
             _payToken,
