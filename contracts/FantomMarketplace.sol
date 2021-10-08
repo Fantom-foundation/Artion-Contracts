@@ -207,20 +207,12 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _owner
     ) {
         Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _owner, "not owning item");
-        } else if (
-            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
-        ) {
-            IERC1155 nft = IERC1155(_nftAddress);
-            require(
-                nft.balanceOf(_owner, _tokenId) >= listedItem.quantity,
-                "not owning item"
-            );
-        } else {
-            revert("invalid nft address");
-        }
+
+        require(
+            _validOwner(_nftAddress, _tokenId, _owner, listedItem.quantity),
+            "not owning item"
+        );
+
         require(_getNow() >= listedItem.startingTime, "item not buyable");
         _;
     }
@@ -349,20 +341,16 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Listing storage listedItem = listings[_nftAddress][_tokenId][
             _msgSender()
         ];
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
-        } else if (
-            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
-        ) {
-            IERC1155 nft = IERC1155(_nftAddress);
-            require(
-                nft.balanceOf(_msgSender(), _tokenId) >= listedItem.quantity,
-                "not owning item"
-            );
-        } else {
-            revert("invalid nft address");
-        }
+
+        require(
+            _validOwner(
+                _nftAddress,
+                _tokenId,
+                _msgSender(),
+                listedItem.quantity
+            ),
+            "not owning item"
+        );
 
         require(
             _payToken == address(0) ||
@@ -618,28 +606,21 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _creator
     ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
         Offer memory offer = offers[_nftAddress][_tokenId][_creator];
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
-        } else if (
-            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
-        ) {
-            IERC1155 nft = IERC1155(_nftAddress);
-            require(
-                nft.balanceOf(_msgSender(), _tokenId) >= offer.quantity,
-                "not owning item"
-            );
-        } else {
-            revert("invalid nft address");
-        }
+
+        require(
+            _validOwner(_nftAddress, _tokenId, _msgSender(), offer.quantity),
+            "not owning item"
+        );
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
         uint256 royaltyFee;
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
+
         address minter = minters[_nftAddress][_tokenId];
         uint16 royalty = royalties[_nftAddress][_tokenId];
+
         if (minter != address(0) && royalty != 0) {
             royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
             offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
@@ -653,6 +634,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 feeAmount = feeAmount.add(royaltyFee);
             }
         }
+
         offer.payToken.safeTransferFrom(
             _creator,
             _msgSender(),
@@ -677,8 +659,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         }
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, offer.quantity);
-        delete (listings[_nftAddress][_tokenId][_msgSender()]);
-        delete (offers[_nftAddress][_tokenId][_creator]);
 
         emit ItemSold(
             _msgSender(),
@@ -690,7 +670,11 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             getPrice(address(offer.payToken)),
             offer.pricePerItem
         );
+
         emit OfferCanceled(_creator, _nftAddress, _tokenId);
+
+        delete (listings[_nftAddress][_tokenId][_msgSender()]);
+        delete (offers[_nftAddress][_tokenId][_creator]);
     }
 
     /// @notice Method for setting royalty
@@ -704,18 +688,11 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) external {
         require(_royalty <= 10000, "invalid royalty");
         require(_isFantomNFT(_nftAddress), "invalid nft address");
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _msgSender(), "not owning item");
-        } else if (
-            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
-        ) {
-            IERC1155 nft = IERC1155(_nftAddress);
-            require(
-                nft.balanceOf(_msgSender(), _tokenId) > 0,
-                "not owning item"
-            );
-        }
+
+        require(
+            _validOwner(_nftAddress, _tokenId, _msgSender(), 1),
+            "not owning item"
+        );
 
         require(
             minters[_nftAddress][_tokenId] == address(0),
@@ -857,26 +834,36 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         return block.timestamp;
     }
 
+    function _validOwner(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _owner,
+        uint256 quantity
+    ) internal returns (bool) {
+        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
+            IERC721 nft = IERC721(_nftAddress);
+            return (nft.ownerOf(_tokenId) == _owner);
+        } else if (
+            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
+        ) {
+            IERC1155 nft = IERC1155(_nftAddress);
+            return (nft.balanceOf(_owner, _tokenId) >= quantity);
+        }
+
+        return false;
+    }
+
     function _cancelListing(
         address _nftAddress,
         uint256 _tokenId,
         address _owner
     ) private {
         Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _owner, "not owning item");
-        } else if (
-            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155)
-        ) {
-            IERC1155 nft = IERC1155(_nftAddress);
-            require(
-                nft.balanceOf(_msgSender(), _tokenId) >= listedItem.quantity,
-                "not owning item"
-            );
-        } else {
-            revert("invalid nft address");
-        }
+
+        require(
+            _validOwner(_nftAddress, _tokenId, _owner, listedItem.quantity),
+            "not owning item"
+        );
 
         delete (listings[_nftAddress][_tokenId][_owner]);
         emit ItemCanceled(_owner, _nftAddress, _tokenId);
