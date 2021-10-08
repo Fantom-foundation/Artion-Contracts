@@ -772,8 +772,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         ) {
             IERC1155 nft = IERC1155(_nftAddress);
             require(nft.balanceOf(_owner, _tokenId) >= quantity, "not owning item");
+        } else {
+            require(false, "not owning item");
         }
-        require(false, "not owning item");
     }
 
     function _cancelListing(
