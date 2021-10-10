@@ -323,17 +323,12 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 _bidAmount >= auction.reservePrice,
                 "bid cannot be lower than reserve price"
             );
-        } else {
-            require(_bidAmount > 0, "invalid bid");
         }
 
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
 
-        require(
-            _bidAmount > highestBid.bid,
-            "failed to outbid highest bidder"
-        );
+        require(_bidAmount > highestBid.bid, "failed to outbid highest bidder");
 
         // Ensures the placed bid is greater than zero
         require(msg.value > 0, "Bid must be greater than zero");
