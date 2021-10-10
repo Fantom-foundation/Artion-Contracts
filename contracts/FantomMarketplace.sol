@@ -488,7 +488,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_deadline > _getNow(), "invalid expiration");
 
-        _validPayToken(_payToken);
+        _validPayToken(address(_payToken));
 
         offers[_nftAddress][_tokenId][_msgSender()] = Offer(
             _payToken,
@@ -750,7 +750,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         return block.timestamp;
     }
 
-    function _validPayToken(address _payToken) external {
+    function _validPayToken(address _payToken) internal {
         require(
             _payToken == address(0) ||
                 (addressRegistry.tokenRegistry() != address(0) &&
@@ -765,7 +765,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _tokenId,
         address _owner,
         uint256 quantity
-    ) internal returns (bool) {
+    ) internal {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
             require(nft.ownerOf(_tokenId) == _owner, "not owning item");
