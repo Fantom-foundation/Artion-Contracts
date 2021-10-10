@@ -138,6 +138,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// @notice ERC721 Address -> Token ID -> highest bidder info (if a bid has been received)
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
+    /// @notice globally and across all auctions, the amount by which a bid has to increase
+    uint256 private erased0;
+
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
 
@@ -328,7 +331,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
 
         require(
-            _bidAmount >= highestBid.bid,
+            _bidAmount > highestBid.bid,
             "failed to outbid highest bidder"
         );
 
