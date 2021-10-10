@@ -108,7 +108,7 @@ contract FantomArtFactory is Ownable {
         (bool success,) = feeRecipient.call{value: msg.value}("");
         require(success, "Transfer failed");
 
-        FantomArtTradable nft = new FantomArtTradable(
+        FantomArtTradable nft = createInstance(
             _name,
             _symbol,
             mintFee,
@@ -120,6 +120,27 @@ contract FantomArtFactory is Ownable {
         nft.transferOwnership(_msgSender());
         emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
+    }
+
+    /**
+    @notice Create FantomNFTTradable instance
+    */
+    function createInstance(
+        address _auction,
+        address _marketplace,
+        address _bundleMarketplace,
+        uint256 _mintFee,
+        address payable _feeRecipient,
+        uint256 _platformFee
+    ) public internal view returns (FantomNFTTradable) {
+        return new FantomNFTTradable (
+            _auction,
+            _marketplace,
+            _bundleMarketplace,
+            _mintFee,
+            _feeRecipient,
+            _platformFee
+        );
     }
 
     /// @notice Method for registering existing FantomArtTradable contract

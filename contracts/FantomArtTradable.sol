@@ -86,7 +86,7 @@ contract FantomArtTradable is
         address _to,
         uint256 _supply,
         string calldata _uri
-    ) external payable {
+    ) external payable canMint {
         require(msg.value >= platformFee, "Insufficient funds to mint.");
 
         uint256 _id = _getNextTokenID();
@@ -105,6 +105,18 @@ contract FantomArtTradable is
         // Send FTM fee to fee recipient
         (bool success, ) = feeReceipient.call{value: msg.value}("");
         require(success, "Transfer failed");
+    }
+
+    /**
+     * @dev Check if it is mintable
+     */
+    modifier canMint() {
+        require(isMintable(), "Not mintable");
+        _;
+    }
+
+    function isMintable()  internal view returns (bool) {
+        return true;
     }
 
     function getCurrentTokenID() public view returns (uint256) {

@@ -51,6 +51,27 @@ contract FantomNFTFactory is Ownable {
     }
 
     /**
+    @notice Create FantomNFTTradable instance
+    */
+    function createInstance(
+        address _auction,
+        address _marketplace,
+        address _bundleMarketplace,
+        uint256 _mintFee,
+        address payable _feeRecipient,
+        uint256 _platformFee
+    ) internal view returns (FantomNFTTradable) {
+        return new FantomNFTTradable (
+            _auction,
+            _marketplace,
+            _bundleMarketplace,
+            _mintFee,
+            _feeRecipient,
+            _platformFee
+        );
+    }
+
+    /**
     @notice Update auction contract
     @dev Only admin
     @param _auction address the auction contract address to set
@@ -122,7 +143,7 @@ contract FantomNFTFactory is Ownable {
         (bool success,) = feeRecipient.call{value: msg.value}("");
         require(success, "Transfer failed");
 
-        FantomNFTTradable nft = new FantomNFTTradable(
+        FantomNFTTradable nft = createInstance(
             _name,
             _symbol,
             auction,

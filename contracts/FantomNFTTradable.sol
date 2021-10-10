@@ -79,7 +79,7 @@ contract FantomNFTTradable is ERC721, Ownable {
      * @dev Mints a token to an address with a tokenURI.
      * @param _to address of the future owner of the token
      */
-    function mint(address _to, string calldata _tokenUri) external payable {
+    function mint(address _to, string calldata _tokenUri) external payable canMint {
         require(msg.value >= platformFee, "Insufficient funds to mint.");
 
         uint256 newTokenId = _getNextTokenId();
@@ -92,6 +92,18 @@ contract FantomNFTTradable is ERC721, Ownable {
         require(success, "Transfer failed");
 
         emit Minted(newTokenId, _to, _tokenUri, _msgSender());
+    }
+
+    /**
+     * @dev Check if it is mintable
+     */
+    modifier canMint() {
+        require(isMintable(), "Not mintable");
+        _;
+    }
+
+    function isMintable()  internal view returns (bool) {
+        return true;
     }
 
     /**
