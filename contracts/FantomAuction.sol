@@ -153,7 +153,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
     /// @notice globally and across all auctions, the amount by which a bid has to increase
-    uint256 public minBidIncrement = 0.05 ether;
+    uint256 public minBidIncrement = 0;
 
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
@@ -317,9 +317,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) internal whenNotPaused {
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
-        if (auction.minBid == 0) {
-            require(_bidAmount > 0, "invalid bid");
-        } else if (auction.minBid == auction.reservePrice) {
+        if (auction.minBid == auction.reservePrice) {
             require(
                 _bidAmount >= auction.reservePrice,
                 "bid cannot be lower than reserve price"
@@ -330,10 +328,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
         uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
 
-        require(
-            _bidAmount >= minBidRequired,
-            "failed to outbid highest bidder"
-        );
+        require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
 
         if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
