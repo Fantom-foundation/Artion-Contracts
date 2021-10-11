@@ -472,7 +472,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address minter = marketplace.minters(_nftAddress, _tokenId);
         uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
         if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = payAmount.mul(royalty).div(100);
+            uint256 royaltyFee = payAmount.mul(royalty).div(10000);
             if (auction.payToken == address(0)) {
                 (bool royaltyTransferSuccess, ) = payable(minter).call{
                     value: royaltyFee
@@ -492,7 +492,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         } else {
             (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
             if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = payAmount.mul(royalty).div(100);
+                uint256 royaltyFee = payAmount.mul(royalty).div(10000);
                 if (auction.payToken == address(0)) {
                     (bool royaltyTransferSuccess, ) = payable(minter).call{
                         value: royaltyFee
