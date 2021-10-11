@@ -786,7 +786,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             uint256 _reservePrice,
             uint256 _startTime,
             uint256 _endTime,
-            bool _resulted
+            bool _resulted,
+            uint256 minBid
         )
     {
         Auction storage auction = auctions[_nftAddress][_tokenId];
@@ -796,7 +797,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             auction.reservePrice,
             auction.startTime,
             auction.endTime,
-            auction.resulted
+            auction.resulted,
+            auction.minBid
         );
     }
 
