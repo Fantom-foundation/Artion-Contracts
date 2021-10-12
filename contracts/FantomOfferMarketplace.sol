@@ -19,6 +19,7 @@ import "./interface/IFantomTokenRegistry.sol";
 import "./interface/IFantomPriceFeed.sol";
 import "./interface/IFantomMarketplace.sol";
 import "./interface/IFantomListingMarketplace.sol";
+import "./interface/IFantomAuction.sol";
 
 contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
@@ -146,6 +147,18 @@ contract FantomOfferMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721) ||
                 IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155),
             "invalid nft address"
+        );
+
+        IFantomAuction auction = IFantomAuction(addressRegistry.auction());
+
+        (, , , uint256 startTime, , bool resulted) = auction.getAuction(
+            _nftAddress,
+            _tokenId
+        );
+
+        require(
+            startTime == 0 || resulted == true,
+            "cannot place an offer if auction is going on"
         );
         require(_deadline > _getNow(), "invalid expiration");
         require(

@@ -7,7 +7,7 @@ async function main(network) {
 
     const [deployer] = await ethers.getSigners();
     const deployerAddress = await deployer.getAddress();
-    console.log('Deploying nft with address:', deployerAddress);
+    console.log(`Deployer's address: `, deployerAddress);
   
     const { TREASURY_ADDRESS, PLATFORM_FEE, WRAPPED_FTM_MAINNET, WRAPPED_FTM_TESTNET } = require('./constants');
   

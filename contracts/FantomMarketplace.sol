@@ -346,7 +346,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _royalty == 0 || _feeRecipient != address(0),
             "invalid fee recipient address"
         );
-        require(!_isFantomNFT(_nftAddress), "invalid nft address");
+        require(!_isFantomNFT(_nftAddress), "invalid nft address");        
         require(
             collectionRoyalties[_nftAddress].creator == address(0),
             "royalty already set"

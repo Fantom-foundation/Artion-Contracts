@@ -11,7 +11,7 @@ const {
     send
   } = require('@openzeppelin/test-helpers');
   
-  const {expect} = require('chai');
+const {expect} = require('chai');
 
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const Artion = artifacts.require('Artion');
