@@ -9,7 +9,7 @@ async function main(network) {
     const deployerAddress = await deployer.getAddress();
     console.log(`Deployer's address: `, deployerAddress);
   
-    const { TREASURY_ADDRESS, PLATFORM_FEE, WRAPPED_FTM_MAINNET, WRAPPED_FTM_TESTNET } = require('../constantss');
+    const { TREASURY_ADDRESS, PLATFORM_FEE, WRAPPED_FTM_MAINNET, WRAPPED_FTM_TESTNET } = require('../constants');
   
     ////////////
     const Artion = await ethers.getContractFactory('Artion');
