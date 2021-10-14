@@ -44,6 +44,10 @@ module.exports = {
     coverage: {
       url: 'http://localhost:8555',
     },
+    
+    localhost: {
+      url: `http://127.0.0.1:8545`
+    },
   },
   etherscan: {
     apiKey: '46DD6NK19R2AZQQIJIY1FXR85HKM2XSNBE'

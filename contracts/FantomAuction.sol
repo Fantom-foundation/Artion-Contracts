@@ -258,7 +258,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
      @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the item being auctioned
      */
-    function placeBid(address _nftAddress, uint256 _tokenId)
+    /* function placeBid(address _nftAddress, uint256 _tokenId)
         external
         payable
         nonReentrant
@@ -278,7 +278,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         _placeBid(_nftAddress, _tokenId, msg.value);
     }
-
+ */
     /**
      @notice Places a new bid, out bidding the existing bidder if found and criteria is reached
      @dev Only callable when the auction is open
