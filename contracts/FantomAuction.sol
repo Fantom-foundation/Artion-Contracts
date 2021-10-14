@@ -79,6 +79,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
+    event UpdateMinBidIncrement(uint256 minBidIncrement);
+
     event UpdateBidWithdrawalLockTime(uint256 bidWithdrawalLockTime);
 
     event BidPlaced(
@@ -139,7 +141,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
     /// @notice globally and across all auctions, the amount by which a bid has to increase
-    uint256 private erased0;
+    uint256 public minBidIncrement = 0;
 
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
@@ -327,8 +329,9 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Ensure bid adheres to outbid increment and threshold
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
 
-        require(_bidAmount > highestBid.bid, "failed to outbid highest bidder");
+        require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
 
         // Ensures the placed bid is greater than zero
         require(msg.value > 0, "Bid must be greater than zero");
@@ -670,6 +673,19 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     function toggleIsPaused() external onlyOwner {
         isPaused = !isPaused;
         emit PauseToggled(isPaused);
+    }
+
+    /**
+     @notice Update the amount by which bids have to increase, across all auctions
+     @dev Only admin
+     @param _minBidIncrement New bid step in WEI
+     */
+    function updateMinBidIncrement(uint256 _minBidIncrement)
+        external
+        onlyOwner
+    {
+        minBidIncrement = _minBidIncrement;
+        emit UpdateMinBidIncrement(_minBidIncrement);
     }
 
     /**
