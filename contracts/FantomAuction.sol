@@ -141,7 +141,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
     /// @notice globally and across all auctions, the amount by which a bid has to increase
-    uint256 public minBidIncrement = 0;
+    uint256 public minBidIncrement = 1;
 
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
@@ -333,16 +333,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
 
-        // Ensures the placed bid is greater than zero
-        require(msg.value > 0, "Bid must be greater than zero");
-
         // Ensure this contract is the owner of the item
         require(
             IERC721(_nftAddress).ownerOf(_tokenId) == address(this),
             "address(this) must be the item owner"
         );
-
-        require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
 
         if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
