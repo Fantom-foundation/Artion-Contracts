@@ -304,7 +304,7 @@ contract FantomBundleMarketplace is
 
     /// @notice Method for buying listed NFT bundle
     /// @param _bundleID Bundle ID
-    function buyItem(string memory _bundleID) external payable nonReentrant {
+    /* function buyItem(string memory _bundleID) external payable nonReentrant {
         bytes32 bundleID = _getBundleID(_bundleID);
         address owner = owners[bundleID];
         require(owner != address(0), "invalid id");
@@ -314,7 +314,7 @@ contract FantomBundleMarketplace is
         require(msg.value >= listing.price, "insufficient balance to buy");
 
         _buyItem(_bundleID, address(0));
-    }
+    } */
 
     /// @notice Method for buying listed NFT bundle
     /// @param _bundleID Bundle ID
