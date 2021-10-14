@@ -342,7 +342,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "address(this) must be the item owner"
         );
 
-
         require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
 
         if (auction.payToken != address(0)) {
@@ -880,12 +879,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             address(this),
             _tokenId
         );
-
-        uint256 minimumBid = 0;
-
-        if (minBidReserve) {
-            minimumBid = _reservePrice;
-        }
 
         uint256 minimumBid = 0;
 
