@@ -32,9 +32,9 @@ module.exports = {
       accounts: [`0x${PRIVATE_KEY}`]
     },
     testnet: {
-      url: `https://rpc.testnet.fantom.network`,
+      url: `https://rpcapi-tracing.testnet.fantom.network`,
       chainId: 4002,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`]
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161`,
