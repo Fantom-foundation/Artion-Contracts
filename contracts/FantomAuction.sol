@@ -331,7 +331,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
         uint256 minBidRequired = highestBid.bid.add(minBidIncrement);
 
-        require(_bidAmount > minBidRequired, "failed to outbid highest bidder");
+	require(_bidAmount >= minBidRequired, "failed to outbid highest bidder");
 
         // Ensure this contract is the owner of the item
         require(
