@@ -1,6 +1,6 @@
 // to deploy locally
 // run: npx hardhat node on a terminal
-// then run: npx hardhat run --network localhost scripts/12_deploy_all.js
+// then run: npx hardhat run --network localhost scripts/scripts2/deploy_all.js
 async function main(network) {
 
     console.log('network: ', network.name);
