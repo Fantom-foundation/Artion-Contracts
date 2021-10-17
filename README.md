@@ -1,6 +1,6 @@
 # Unit Tests for Fantom Artion Marketplace
 
-This repo contains only the necessities to deploy a mock `ERC20`, `ERC721`, and `FantomAuction` contract on a local blockchain
+This repo contains only the necessities to deploy a mock `ERC20`, `ERC721`, and `FantomAuction` contract on a local blockchain and test the `FantomAuction` contract with the supplied unit test
 
 ## Currently Included
 
@@ -14,7 +14,7 @@ Using `truffle`, `ganache`, `chai`, and `openzeppelin test-helpers` to run throu
 - Places test bids on auctions by test users `bidder` and `winner`
 - Cancels auctions currently running, that have ended, and have ended with bids below, above, and at reserve price
 - Results successful auctions by test users `winner` and `seller`
-- Checks to ensure assets and properly in escrow while auctions are live and bids are placed; and that assets are properly transferred upon outbids, cancels, failed and successful auctions
+- Checks to ensure assets are properly in escrow while auctions are live and bids are placed; and that assets are properly transferred upon outbids, cancels, failed and successful auctions
 - Attempts various contract-breaking transactions from users `other` and `hacker` throughout the process
 
 (Current unit test checks: `89`)
