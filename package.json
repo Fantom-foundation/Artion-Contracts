@@ -1,0 +1,32 @@
+{
+  "name": "artion-contracts",
+  "version": "1.0.0",
+  "description": "This repo contains only the necessities to deploy a mock `ERC20`, `ERC721`, and `FantomAuction` contract on a local blockchain and test the `FantomAuction` contract with the supplied unit test",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fantom-foundation/Artion-Contracts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Fantom-foundation/Artion-Contracts/issues"
+  },
+  "homepage": "https://github.com/Fantom-foundation/Artion-Contracts#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.3.2",
+    "@openzeppelin/contracts-upgradeable": "^4.3.2",
+    "@openzeppelin/test-helpers": "^0.5.15",
+    "chai": "^4.3.4",
+    "ganache-cli": "^6.12.2",
+    "truffle": "^5.4.15",
+    "truffle-contract-size": "^2.0.1"
+  }
+}
