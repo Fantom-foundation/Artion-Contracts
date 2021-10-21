@@ -49,6 +49,9 @@ Install the proper libraries
 npm install --save-dev @openzeppelin/contracts
 ```
 ```
+npm install --save-dev @openzeppelin/contracts-upgradeable
+```
+```
 npm install --save-dev @openzeppelin/test-helpers
 ```
 ```
