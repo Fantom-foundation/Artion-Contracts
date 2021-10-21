@@ -1,0 +1,45 @@
+{
+  "name": "Artion-Contracts",
+  "version": "1.0.0",
+  "description": "This repo contains only the necessities to deploy a mock `ERC20`, `ERC721`, and `FantomAuction` contract on a local blockchain and test the `FantomAuction` contract with the supplied unit test",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fantom-foundation/Artion-Contracts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Fantom-foundation/Artion-Contracts/issues"
+  },
+  "homepage": "https://github.com/Fantom-foundation/Artion-Contracts#readme",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.0",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
+    "@nomiclabs/hardhat-solhint": "^2.0.0",
+    "@nomiclabs/hardhat-truffle5": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.3.2",
+    "@openzeppelin/test-helpers": "^0.5.15",   
+    "@openzeppelin/contracts-upgradeable": "^4.3.2",
+    "@openzeppelin/hardhat-upgrades": "^1.10.0",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.2.0",
+    "ganache-cli": "^6.12.2",
+    "hardhat": "^2.6.6"
+  },
+  "dependencies": {    
+    "dotenv": "^10.0.0",
+    "hardhat-contract-sizer": "^2.1.1",
+    "hardhat-gas-reporter": "^1.0.4",
+    "solidity-coverage": "^0.7.17"
+  }
+}

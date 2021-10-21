@@ -169,3 +169,13 @@ Contract: FantomAuction
 
   89 passing (2m)
 ```
+
+-------------- hardhat env -------------------
+-install the dependencies. If you get some errors, delete the node_modules and re-install the dependencies using yarn or npm install
+
+-create a file called .env  with a line like PRIVATE_KEY=8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffff
+
+-to run a test script, first run a local node on a powershell for windows or other command shell for linux or mac by: npx hardhat node
+ and then on another powershell run for example npx hardhat test ./test/1_FantomAuction.test.js
+
+-to get the size of compiled code run: npx hardhat size-contracts
