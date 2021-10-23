@@ -2,17 +2,21 @@ require('dotenv').config();
 require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-truffle5');
 require("@nomiclabs/hardhat-etherscan");
+require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
 require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer');
 require('@openzeppelin/hardhat-upgrades');
+require('@openzeppelin/test-helpers');
+require("@nomiclabs/hardhat-web3");
+
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 module.exports = {
   solidity: {
-    version: '0.6.12',
+    version: '0.8.7',
     settings: {
       optimizer: {
         enabled: true,
@@ -26,6 +30,8 @@ module.exports = {
     gasPrice: 50,
   },
   networks: {
+    hardhat: {
+    },
     mainnet: {
       url: `https://rpcapi.fantom.network`,
       chainId: 250,

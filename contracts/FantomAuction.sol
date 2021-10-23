@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 interface IFantomAddressRegistry {
     function artion() external view returns (address);
@@ -52,7 +53,7 @@ interface IFantomTokenRegistry {
 /**
  * @notice Secondary sale auction contract for NFTs
  */
-contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
     using AddressUpgradeable for address payable;
     using SafeERC20 for IERC20;
@@ -122,7 +123,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 indexed tokenId,
         address indexed winner,
         address payToken,
-        int256 unitPrice,
+        uint256 unitPrice,
         uint256 winningBid
     );
 
@@ -153,13 +154,16 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
     /// @notice globally and across all auctions, the amount by which a bid has to increase
-    uint256 public minBidIncrement = 1;
+    uint256 public minBidIncrement = 25000000000000000000;
 
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
 
     /// @notice global platform fee, assumed to always be to 1 decimal place i.e. 25 = 2.5%
     uint256 public platformFee = 25;
+
+    /// @notice Used to track and set the maximum allowed auction time (_startTimestamp + maxAuctionLength)
+    uint256 public constant maxAuctionLength = 30 days;
 
     /// @notice where to send platform fee funds to
     address payable public platformFeeRecipient;
@@ -169,6 +173,8 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice for switching off auction creations, bids and withdrawals
     bool public isPaused;
+
+    uint256 public hardhatBlockTimestamp; // HARDHAT-TESTING
 
     modifier whenNotPaused() {
         require(!isPaused, "contract paused");
@@ -181,6 +187,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 addressRegistry.bundleMarketplace() == _msgSender(),
             "not marketplace contract"
         );
+        _;
+    }
+
+    modifier onlyNotContract() {
+        require(_msgSender() == tx.origin);
         _;
     }
 
@@ -199,6 +210,18 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         __Ownable_init();
         __ReentrancyGuard_init();
+    }
+
+    function hardhatTimestamp(uint256 timeStamp)
+        public
+    {
+        hardhatBlockTimestamp = timeStamp;
+    }
+
+    function getHardhatTimestamp()
+        public view returns (uint256 _hardhatBlockTimestamp)
+    {
+        _hardhatBlockTimestamp = hardhatBlockTimestamp;
     }
 
     /**
@@ -233,11 +256,17 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         require(
-            _payToken == address(0) ||
+            _payToken != address(0) ||
                 (addressRegistry.tokenRegistry() != address(0) &&
                     IFantomTokenRegistry(addressRegistry.tokenRegistry())
                         .enabled(_payToken)),
             "invalid pay token"
+        );
+
+        // Adds hard limits to cap the maximum auction length
+        require(
+            _endTimestamp <= (_startTimestamp + maxAuctionLength),
+            "Auction time exceeds maximum length"
         );
 
         _createAuction(
@@ -291,17 +320,22 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _nftAddress,
         uint256 _tokenId,
         uint256 _bidAmount
-    ) external nonReentrant whenNotPaused {
-        require(_msgSender().isContract() == false, "no contracts permitted");
+    ) external nonReentrant whenNotPaused onlyNotContract {
 
         // Check the auction to see if this is a valid bid
         Auction memory auction = auctions[_nftAddress][_tokenId];
 
         // Ensure auction is in flight
         require(
-            _getNow() >= auction.startTime && _getNow() <= auction.endTime,
-            "bidding outside of the auction window"
+            hardhatBlockTimestamp >= auction.startTime,
+            "bidding before auction started"
         );
+
+        require(
+            hardhatBlockTimestamp <= auction.endTime,
+            "bidding outside auction window"
+        );
+
         require(
             auction.payToken != address(0),
             "ERC20 method used for FTM auction"
@@ -338,7 +372,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             );
         }
 
-        // Refund existing top bidder if found
         if (highestBid.bidder != address(0)) {
             _refundHighestBidder(
                 _nftAddress,
@@ -346,12 +379,15 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 highestBid.bidder,
                 highestBid.bid
             );
+
+            // Clear up highest bid
+            delete highestBids[_nftAddress][_tokenId];
         }
 
         // assign top bidder and bid time
-        highestBid.bidder = _msgSender();
+        highestBid.bidder = payable(_msgSender());
         highestBid.bid = _bidAmount;
-        highestBid.lastBidTime = _getNow();
+        highestBid.lastBidTime = hardhatBlockTimestamp;
 
         emit BidPlaced(_nftAddress, _tokenId, _msgSender(), _bidAmount);
     }
@@ -378,7 +414,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _endTime = auctions[_nftAddress][_tokenId].endTime;
 
         require(
-            _getNow() > _endTime && (_getNow() - _endTime >= 43200),
+            hardhatBlockTimestamp > _endTime && (hardhatBlockTimestamp - _endTime >= 43200),
             "can withdraw only after 12 hours (after auction ended)"
         );
 
@@ -388,7 +424,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         delete highestBids[_nftAddress][_tokenId];
 
         // Refund the top bidder
-        _refundHighestBidder(_nftAddress, _tokenId, _msgSender(), previousBid);
+        _refundHighestBidder(_nftAddress, _tokenId, payable(_msgSender()), previousBid);
 
         emit BidWithdrawn(_nftAddress, _tokenId, _msgSender(), previousBid);
     }
@@ -412,25 +448,34 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         // Check the auction to see if it can be resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
+        // Store auction owner
+        address seller = auction.owner;
+
+        // Get info on who the highest bidder is
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        address winner = highestBid.bidder;
+        uint256 winningBid = highestBid.bid;
+
+        // Ensure _msgSender() is either auction winner or seller
         require(
-            IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() &&
-                _msgSender() == auction.owner,
-            "sender must be item owner"
+            _msgSender() == winner || _msgSender() == seller,
+            "_msgSender() must be auction winner or seller"
+        );
+
+        // Ensure this contract is the owner of the item
+        require(
+            IERC721(_nftAddress).ownerOf(_tokenId) == address(this),
+            "address(this) must be the item owner"
         );
 
         // Check the auction real
         require(auction.endTime > 0, "no auction exists");
 
         // Check the auction has ended
-        require(_getNow() > auction.endTime, "auction not ended");
+        require(hardhatBlockTimestamp > auction.endTime, "auction not ended");
 
         // Ensure auction not already resulted
         require(!auction.resulted, "auction already resulted");
-
-        // Get info on who the highest bidder is
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
-        uint256 winningBid = highestBid.bid;
 
         // Ensure there is a winner
         require(winner != address(0), "no open bids");
@@ -470,13 +515,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 require(platformTransferSuccess, "failed to send platform fee");
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
-                require(
-                    payToken.transfer(
+                payToken.safeTransfer(
                         platformFeeRecipient,
                         platformFeeAboveReserve
-                    ),
-                    "failed to send platform fee"
-                );
+                    );
             }
 
             // Send remaining to designer
@@ -485,6 +527,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             payAmount = winningBid;
         }
 
+        /*
         IFantomMarketplace marketplace = IFantomMarketplace(
             addressRegistry.marketplace()
         );
@@ -502,10 +545,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 );
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
-                require(
-                    payToken.transfer(minter, royaltyFee),
-                    "failed to send the owner their royalties"
-                );
+                payToken.safeTransfer(minter, royaltyFee);
             }
             payAmount = payAmount.sub(royaltyFee);
         } else {
@@ -522,30 +562,26 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                     );
                 } else {
                     IERC20 payToken = IERC20(auction.payToken);
-                    require(
-                        payToken.transfer(minter, royaltyFee),
-                        "failed to send the royalties"
-                    );
+                    payToken.safeTransfer(minter, royaltyFee);
                 }
                 payAmount = payAmount.sub(royaltyFee);
             }
         }
+        */
+
         if (payAmount > 0) {
-            if (auction.payToken == address(0)) {
-                (bool ownerTransferSuccess, ) = auction.owner.call{
-                    value: payAmount
-                }("");
-                require(
-                    ownerTransferSuccess,
-                    "failed to send the owner the auction balance"
-                );
-            } else {
+            //if (auction.payToken == address(0)) {
+            //    (bool ownerTransferSuccess, ) = auction.owner.call{
+            //        value: payAmount
+            //    }("");
+            //    require(
+            //        ownerTransferSuccess,
+            //       "failed to send the owner the auction balance"
+            //    );
+            //} else {
                 IERC20 payToken = IERC20(auction.payToken);
-                require(
-                    payToken.transfer(auction.owner, payAmount),
-                    "failed to send the owner the auction balance"
-                );
-            }
+                payToken.safeTransfer(auction.owner, payAmount);
+            //}
         }
 
         // Transfer the token to the winner
@@ -554,9 +590,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             winner,
             _tokenId
         );
-
+        /*
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
+        */
+        uint256 price = payAmount;//IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
 
         emit AuctionResulted(
             _msgSender(),
@@ -564,14 +602,84 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             winner,
             auction.payToken,
-            IFantomMarketplace(addressRegistry.marketplace()).getPrice(
-                auction.payToken
-            ),
+            price,
             winningBid
         );
 
         // Remove auction
         delete auctions[_nftAddress][_tokenId];
+    }
+
+    /**
+     @notice Results an auction that failed to meet the auction.reservePrice
+     @dev Only admin or smart contract
+     @dev Auction can only be fail-resulted if the auction has expired and the auction.reservePrice has not been met
+     @dev If there have been no bids, the auction needs to be cancelled instead using `cancelAuction()`
+     @param _nftAddress ERC 721 Address
+     @param _tokenId Token ID of the item being auctioned
+     */
+    function resultFailedAuction(address _nftAddress, uint256 _tokenId)
+        external
+        nonReentrant
+    {
+        // Check the auction to see if it can be resulted
+        Auction storage auction = auctions[_nftAddress][_tokenId];
+
+        // Store auction owner
+        address seller = auction.owner;
+
+        // Ensure this contract is the owner of the item
+        require(
+            IERC721(_nftAddress).ownerOf(_tokenId) == address(this),
+            "address(this) must be the item owner"
+        );
+
+        // Check if the auction exists
+        require(auction.endTime > 0, "no auction exists");
+
+        // Check if the auction has ended
+        require(hardhatBlockTimestamp > auction.endTime, "auction not ended");
+
+        // Ensure auction not already resulted
+        require(!auction.resulted, "auction already resulted");
+
+        // Get info on who the highest bidder is
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        address payable topBidder = highestBid.bidder;
+        uint256 topBid = highestBid.bid;
+
+        // Ensure _msgSender() is either auction topBidder or seller
+        require(
+            _msgSender() == topBidder || _msgSender() == seller,
+            "_msgSender() must be auction topBidder or seller"
+        );
+
+        // Ensure the topBid is less than the auction.reservePrice
+        require(topBidder != address(0), "no open bids");
+        require(
+            topBid < auction.reservePrice,
+            "highest bid is >= reservePrice"
+        );
+
+        // Refund existing topBidder
+        if (topBidder != address(0)) {
+            _refundHighestBidder(_nftAddress, _tokenId, topBidder, topBid);
+
+            // Clear up highest bid
+            delete highestBids[_nftAddress][_tokenId];
+        }
+
+        // Remove auction and top bidder
+        delete auctions[_nftAddress][_tokenId];
+
+        // Transfer the item back to auctions.owner
+        IERC721(_nftAddress).safeTransferFrom(
+            IERC721(_nftAddress).ownerOf(_tokenId),
+            seller,
+            _tokenId
+        );
+
+        emit AuctionCancelled(_nftAddress, _tokenId);
     }
 
     /**
@@ -588,14 +696,23 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         Auction memory auction = auctions[_nftAddress][_tokenId];
 
         require(
-            IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() &&
+            IERC721(_nftAddress).ownerOf(_tokenId) == address(this) &&
                 _msgSender() == auction.owner,
             "sender must be owner"
         );
+
         // Check auction is real
         require(auction.endTime > 0, "no auction exists");
+
         // Check auction not already resulted
         require(!auction.resulted, "auction already resulted");
+
+        // Gets info on auction and ensures highest bid is less than the reserve price
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        require(
+            highestBid.bid < auction.reservePrice,
+            "Highest bid is currently above reserve price"
+        );
 
         _cancelAuction(_nftAddress, _tokenId);
     }
@@ -635,10 +752,11 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         emit UpdateBidWithdrawalLockTime(_bidWithdrawalLockTime);
     }
 
-    /**
+      /**
      @notice Update the current reserve price for an auction
      @dev Only admin
      @dev Auction must exist
+     @dev Reserve price can only be decreased and never increased
      @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the NFT being auctioned
      @param _reservePrice New Ether reserve price (WEI value)
@@ -649,13 +767,27 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 _reservePrice
     ) external {
         Auction storage auction = auctions[_nftAddress][_tokenId];
+        // Store the current reservePrice
+        uint256 currentReserve = auction.reservePrice;
 
-        require(_msgSender() == auction.owner, "sender must be item owner");
+        // Ensures the sender owns the auction and the item is currently in escrow
+        require(
+            IERC721(_nftAddress).ownerOf(_tokenId) == address(this) &&
+                _msgSender() == auction.owner,
+            "Sender must be item owner and NFT must be in escrow"
+        );
 
-        // Ensure auction not already resulted
-        require(!auction.resulted, "auction already resulted");
+        // Ensures the auction hasn't been resulted
+        require(!auction.resulted, "Auction already resulted");
 
-        require(auction.endTime > 0, "no auction exists");
+        // Ensures auction exists
+        require(auction.endTime > 0, "No auction exists");
+
+        // Ensures the reserve price can only be decreased and never increased
+        require(
+            _reservePrice < currentReserve,
+            "Reserve price can only be decreased"
+        );
 
         auction.reservePrice = _reservePrice;
         emit UpdateAuctionReservePrice(
@@ -685,7 +817,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(_startTime > 0, "invalid start time");
 
-        require(auction.startTime + 60 > _getNow(), "auction already started");
+        require(auction.startTime + 60 > hardhatBlockTimestamp, "auction already started");
 
         require(
             _startTime + 300 < auction.endTime,
@@ -719,7 +851,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(_msgSender() == auction.owner, "sender must be owner");
 
         // Check the auction has not ended
-        require(_getNow() < auction.endTime, "auction already ended");
+        require(hardhatBlockTimestamp < auction.endTime, "auction already ended");
 
         require(auction.endTime > 0, "no auction exists");
         require(
@@ -727,7 +859,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "end time must be greater than start"
         );
         require(
-            _endTimestamp > _getNow() + 300,
+            _endTimestamp > hardhatBlockTimestamp + 300,
             "auction should end after 5 minutes"
         );
 
@@ -857,13 +989,20 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "end time must be greater than start (by 5 minutes)"
         );
 
-        require(_startTimestamp > _getNow(), "invalid start time");
+        require(_startTimestamp > hardhatBlockTimestamp, "invalid start time");
 
         uint256 minimumBid = 0;
 
         if (minBidReserve) {
             minimumBid = _reservePrice;
         }
+
+        // Transfer the NFT to the Artion contract to be held in escrow
+        IERC721(_nftAddress).safeTransferFrom(
+            IERC721(_nftAddress).ownerOf(_tokenId),
+            address(this),
+            _tokenId
+        );
 
         // Setup the auction
         auctions[_nftAddress][_tokenId] = Auction({
@@ -881,7 +1020,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     function _cancelAuction(address _nftAddress, uint256 _tokenId) private {
         // refund existing top bidder if found
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        HighestBid memory highestBid = highestBids[_nftAddress][_tokenId];
         if (highestBid.bidder != address(0)) {
             _refundHighestBidder(
                 _nftAddress,
@@ -896,6 +1035,13 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         // Remove auction and top bidder
         delete auctions[_nftAddress][_tokenId];
+
+        // Transfer the NFT ownership back to _msgSender()
+        IERC721(_nftAddress).safeTransferFrom(
+            IERC721(_nftAddress).ownerOf(_tokenId),
+            _msgSender(),
+            _tokenId
+        );
 
         emit AuctionCancelled(_nftAddress, _tokenId);
     }
@@ -920,10 +1066,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             require(successRefund, "failed to refund previous bidder");
         } else {
             IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(_currentHighestBidder, _currentHighestBid),
-                "failed to refund previous bidder"
-            );
+            payToken.safeTransfer(_currentHighestBidder, _currentHighestBid);
         }
         emit BidRefunded(
             _nftAddress,
@@ -942,6 +1085,6 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         require(_tokenContract != address(0), "Invalid address");
         IERC20 token = IERC20(_tokenContract);
         uint256 balance = token.balanceOf(address(this));
-        require(token.transfer(_msgSender(), balance), "Transfer failed");
+        token.safeTransfer(_msgSender(), balance);
     }
 }
