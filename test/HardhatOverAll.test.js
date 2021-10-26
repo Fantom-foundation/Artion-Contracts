@@ -32,7 +32,7 @@ const weiToEther = (n) => {
 }
 
 
-contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer, bidder1, bidder2, bidder3])  {
+contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer, bidder1, bidder2, bidder3, hacker])  {
 
     const platformFee = ether(PLATFORM_FEE);
     const marketPlatformFee = new BN(MARKETPLACE_PLATFORM_FEE);    
@@ -144,7 +144,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
 
             console.log(`
             The artist lists the nft in the market with price 20 wFTM and 
-            starting time 2021-09-22 10:00:00 GMT`);
+            start time 2021-09-22 10:00:00 GMT`);
             await this.fantomMarketplace.listItem(
                     this.artion.address,
                     new BN('1'),
@@ -226,8 +226,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             expect(listing.startingTime.toString()).to.be.equal('0');
 
             console.log('');
-        });
-
+        })
 
         it('Scenario 2', async function() {
 
@@ -288,7 +287,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             });
 
             console.log(`
-            The artist approves the nft to the market`);
+            The artist approves the nft to the auction`);
             await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
 
             console.log(`
@@ -424,8 +423,9 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
                 winningBid: ether('30')
             });
 
-        })
+            console.log('');
 
+        })
 
         it('Scenario 3', async function() {
 
@@ -510,7 +510,7 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
 
             console.log(`
             The artist lists the 2 nfts in the bundle market with price 20 wFTM and 
-            starting time 2021-09-22 10:00:00 GMT`);
+            start time 2021-09-22 10:00:00 GMT`);
             await this.fantomBundleMarketplace.listItem(
                     'mynfts',
                     [this.artion.address, this.artion.address],
@@ -586,9 +586,1275 @@ contract('Overall Test',  function ([owner, platformFeeRecipient, artist, buyer,
             balance = await this.mockERC20.balanceOf(platformFeeRecipient);
             expect(weiToEther(balance)*1).to.be.equal(1);
 
+            console.log('');
+        })
+    
+        it('Scenario 4', async function(){
+
+            console.log(`
+            Scenario 4:
+            An artist mints an NFT for him/herself
+            He/She then put it on the marketplace with price of 20 wFTMs
+            A buyer then buys that NFT
+            `);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            *The artist doesn't approve the nft to the market yet this it should be reverted with 'item not approved'
+            when he/she tries to list the nft`);
+            await expectRevert (this.fantomMarketplace.listItem(
+                    this.artion.address,
+                    new BN('1'),
+                    new BN('1'),
+                    this.mockERC20.address,
+                    ether('20'),
+                    new BN('1632304800'), // 2021-09-22 10:00:00 GMT
+                    { from : artist }
+                    ), 'item not approved');
+
+            
+            console.log('');
+        });
+
+        it('Scenario 5', async function() {
+
+            console.log(`
+            Scenario 5:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            But he/she forgets to approve the nft to the auction contract
+            so when he/she tries to create the action, it will be reverted`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            *The artist forgets to approve the nft to the auction so he/she will fail to create an auction`);
+            //await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+            
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            ), `not owner and or contract not approved`);
+            
+            console.log('');
         })
 
+        it('Scenario 6', async function() {
 
+            console.log(`
+            Scenario 3:
+            An artist mints two NFTs from him/herself
+            He/She then put them on the marketplace as bundle price of 20 wFTMs
+            But he/she forgets to approve the nfts to the bundle marketplace
+            so he/she fails to list the nfts`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting the first NFT...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            NFT1 minted successfully`);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            Now minting the second NFT...`);
+            result = await this.artion.mint(artist, 'http://artist.com/art2.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            NFT2 minted successfully`);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 2, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art2.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('2'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art2.jpeg',
+                minter : artist
+            });
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${2*PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*2);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*2 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE*2} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*2);            
+
+            console.log(`
+            *The artist forgets to approve the nfts to the bundle market so he/she will fail to list the nfts
+            with 'not owner and or contract not approved'`);
+            //await this.artion.setApprovalForAll(this.fantomBundleMarketplace.address, true, {from: artist});
+            
+            await expectRevert(this.fantomBundleMarketplace.listItem(
+                    'mynfts',
+                    [this.artion.address, this.artion.address],
+                    [new BN('1'),new BN('2')],
+                    [new BN('1'), new BN('1')],
+                    this.mockERC20.address,
+                    ether('20'),
+                    new BN('1632304800'), // 2021-09-22 10:00:00 GMT
+                    { from : artist }
+                    ),'item not approved');
+            
+            console.log('');
+        })
+
+        it('Scenario 7', async function(){
+
+            console.log(`
+            Scenario 7:
+            An artist mints an NFT for him/herself
+            He/She then put it on the marketplace with price of 20 wFTM2s
+            But because wFTM2 is not a valid pay token, so he/she will fail with 'invalid pay token'
+            `);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTM as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTM as the platform fee is ${PLATFORM_FEE} FTM `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the market`);
+            await this.artion.setApprovalForAll(this.fantomMarketplace.address, true, {from: artist});
+
+            this.mockERC20_2 = await MockERC20.new("wFTM2", "wFTM2", ether('1000000'));
+
+            console.log(`
+            *The artist lists the nft in the market with price 20 wFTM2 and 
+            start time 2021-09-22 10:00:00 GMT but the listing will fail with 'invalid pay token' 
+            as the token is not registered`);
+            await expectRevert(this.fantomMarketplace.listItem(
+                    this.artion.address,
+                    new BN('1'),
+                    new BN('1'),
+                    this.mockERC20_2.address,
+                    ether('20'),
+                    new BN('1632304800'), // 2021-09-22 10:00:00 GMT
+                    { from : artist }
+                    ), 'invalid pay token');
+            
+            console.log('');
+        });
+
+        it('Scenario 8', async function() {
+
+            console.log(`
+            Scenario 8:
+            An artist mints an NFT from him/herself
+            The contract owner pauses the auction
+            The artist then tries to put the nft on an auction with reserve price of 20 wFTMs
+            but it will fail with 'xxx'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});            
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The contract owner pauses the acution`);
+            result = await this.fantomAuction.toggleIsPaused({from:owner});
+
+            console.log(`
+            *PauseToggled event should be emitted with true value`);
+
+            expectEvent.inLogs(result.logs, 'PauseToggled', {
+                isPaused: true
+            })
+
+            console.log(`
+            *The artist tries to auction his/her nfts with reserve price of 20 wFTMs
+            but it will fail with 'contract paused'`);
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            ),'contract paused');
+
+            console.log('');
+
+        })
+
+        it('Scenario 9', async function() {
+
+            console.log(`
+            Scenario 9:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            A hacker tries to cancel the auction but he/she will fail with 'sender must be the owner'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The artist auctions his nfts with reserve price of 20 wFTMs`);
+            result =  await this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            );
+
+            console.log(`
+            *Event AuctionCreated should be emitted with correct values: 
+            nftAddress = ${this.artion.address}, 
+            tokenId = 1, 
+            payToken = ${this.mockERC20.address}`);
+            expectEvent.inLogs(result.logs, 'AuctionCreated',{
+                nftAddress: this.artion.address,
+                tokenId: new BN('1'),
+                payToken: this.mockERC20.address
+            });
+
+            console.log(`
+            *A hacker tries to cancel the auction but he/she will fail with 'sender must be owner'`);
+
+            expectRevert(this.fantomAuction.cancelAuction(this.artion.address, new BN('1'), {from:hacker}), 'sender must be owner');
+
+            console.log('');
+
+        })
+
+        it('Scenario 10', async function() {
+
+            console.log(`
+            Scenario 10:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs but the start time is in the past
+            so the auction creation will fail with 'invalid start time'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            *The artist auctions his nfts with reserve price of 20 wFTMs but the start time is in the past
+            so the auction creation will fail with 'invalid start time'`);
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632477600'),  //2021-09-24 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            ),'invalid start time');
+            
+            console.log('');
+
+        })
+
+        it('Scenario 11', async function() {
+
+            console.log(`
+            Scenario 11:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs but the end time is earlier
+            than the start time so the auction creation will fail with 'end time must be greater than start (by 5 minutes)'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            *The artist auctions his nfts with reserve price of 20 wFTMs but the end time is
+            earlier than the start time so the auction creation will fail with 'end time must be greater than start (by 5 minutes)' `);
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632650400'),  //2021-09-26 10:00:00
+                false,
+                new BN('1632564000'),   //2021-09-25 10:00:00
+                { from: artist }
+            ),'end time must be greater than start (by 5 minutes)');
+            
+            console.log('');
+        })
+
+        it('Scenario 12', async function() {
+
+            console.log(`
+            Scenario 12:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs but the end time is only 3 minutes after
+            the start time so the auction creation will fail with 'end time must be greater than start (by 5 minutes)'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            *The artist auctions his nfts with reserve price of 20 wFTMs but the end time is
+            earlier than the start time so the auction 
+            creation will fail with 'end time must be greater than start (by 5 minutes)' `);
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632650400'),  //2021-09-26 10:00:00
+                false,
+                new BN('1632650580'),   //2021-09-26 10:03:00
+                { from: artist }
+            ),'end time must be greater than start (by 5 minutes)');
+            
+            console.log('');
+        })
+
+        it('Scenario 13', async function() {
+
+            console.log(`
+            Scenario 13:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            He/She then tries to put the same nft again and 
+            this attempt will fail with 'auction already started'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The artist auctions his nfts with reserve price of 20 wFTMs`);
+            result =  await this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            );
+
+            console.log(`
+            *Event AuctionCreated should be emitted with correct values: 
+            nftAddress = ${this.artion.address}, 
+            tokenId = 1, 
+            payToken = ${this.mockERC20.address}`);
+            expectEvent.inLogs(result.logs, 'AuctionCreated',{
+                nftAddress: this.artion.address,
+                tokenId: new BN('1'),
+                payToken: this.mockERC20.address
+            });
+
+            console.log(`
+            *The artist tries to auction his nfts with reserve price of 20 wFTMs but
+            this will fail with 'auction already started'`);
+            await expectRevert(this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            ),'auction already started');            
+
+            console.log('');
+
+        })
+
+        it('Scenario 14', async function() {
+
+            console.log(`
+            Scenario 14:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            Bidder1 then bids the auction with 20 wFTMs but the auction hasn't started yet
+            so it will fail with 'bidding outside of the auction window' `);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The artist auctions his nfts with reserve price of 20 wFTMs`);
+            result =  await this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            );
+
+            console.log(`
+            *Event AuctionCreated should be emitted with correct values: 
+            nftAddress = ${this.artion.address}, 
+            tokenId = 1, 
+            payToken = ${this.mockERC20.address}`);
+            expectEvent.inLogs(result.logs, 'AuctionCreated',{
+                nftAddress: this.artion.address,
+                tokenId: new BN('1'),
+                payToken: this.mockERC20.address
+            });
+
+            console.log(`
+            Mint 50 wFTMs to bidder1 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder1, ether('50'));
+
+            console.log(`
+            Bidder1 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder1});
+            
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:30:00`);
+            await this.fantomAuction.setTime(new BN('1632562200'));
+
+            console.log(`
+            *Bidder1 place a bid of 20 wFTMs but it will fail with 'bidding outside of the auction window'
+            as the auction will only start 30 minutes later.`);
+            await expectRevert(this.fantomAuction.placeBid(this.artion.address, new BN('1'), ether('20'), { from: bidder1 }), 
+            'bidding outside of the auction window');
+            
+            console.log('');
+
+        })
+
+        it('Scenario 15', async function() {
+
+            console.log(`
+            Scenario 15:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            Bidder1, then bids the auction with 19 wFTMs thus it will fail 
+            with 'bid cannot be lower than reserve price' as it's below the reserve price`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The artist auctions his nfts with reserve price of 20 wFTMs`);
+            result =  await this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            );
+
+            console.log(`
+            *Event AuctionCreated should be emitted with correct values: 
+            nftAddress = ${this.artion.address}, 
+            tokenId = 1, 
+            payToken = ${this.mockERC20.address}`);
+            expectEvent.inLogs(result.logs, 'AuctionCreated',{
+                nftAddress: this.artion.address,
+                tokenId: new BN('1'),
+                payToken: this.mockERC20.address
+            });
+
+            console.log(`
+            Mint 50 wFTMs to bidder1 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder1, ether('50'));
+
+            console.log(`
+            Bidder1 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder1});
+
+            console.log(`
+            Mint 50 wFTMs to bidder2 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder2, ether('50'));
+
+            console.log(`
+            Bidder2 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder2});
+
+            console.log(`
+            Mint 50 wFTMs to bidder3 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder3, ether('50'));
+
+            console.log(`
+            Bidder3 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder3});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 10:30:00`);
+            await this.fantomAuction.setTime(new BN('1632565800'));
+
+            console.log(`
+            *Bidder1 place a bid of 19 wFTMs which will fail with 'bid cannot be lower than reserve price'`);
+            await this.fantomAuction.placeBid(this.artion.address, new BN('1'), ether('19'), { from: bidder1 });
+            
+            console.log('');
+
+        })
+
+        it('Scenario 16', async function() {
+
+            console.log(`
+            Scenario 16:
+            An artist mints an NFT from him/herself
+            He/She then put it on an auction with reserve price of 20 wFTMs
+            Bidder1 bids with 25 wFTMs then bidder2 then bid with 22 wFTMs, which will fail
+            with 'failed to outbid highest bidder'`);
+
+            let balance = await this.artion.platformFee();
+            console.log(`
+            Platform Fee: ${weiToEther(balance)}`);
+
+            let balance1 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist before minting: ${weiToEther(balance1)}`);
+
+            let balance2 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of the fee recipient before minting: ${weiToEther(balance2)}`);
+
+            console.log(`
+            Now minting...`);
+            let result = await this.artion.mint(artist, 'http://artist.com/art.jpeg', {from: artist, value: ether(PLATFORM_FEE)});
+            console.log(`
+            Minted successfully`);
+
+            let balance3 = await web3.eth.getBalance(artist);
+            console.log(`
+            FTM balance of artist after minting: ${weiToEther(balance3)}`);
+
+            let balance4 = await web3.eth.getBalance(platformFeeRecipient);
+            console.log(`
+            FTM balance of recipient after minting: ${weiToEther(balance4)}`);
+
+            console.log(`
+            *The difference of the artist's FTM balance should be more than ${PLATFORM_FEE} FTMs as 
+            the platform fee is ${PLATFORM_FEE} FTM and minting costs some gases
+            but should be less than ${PLATFORM_FEE + 1} FTM as the gas fees shouldn't be more than 1 FTM`);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.greaterThan(PLATFORM_FEE*1);
+            expect(weiToEther(balance1)*1 - weiToEther(balance3)*1).to.be.lessThan(PLATFORM_FEE*1 + 1);
+
+            console.log(`
+            *The difference of the recipients's FTM balance should be ${PLATFORM_FEE} FTMs as the platform fee is ${PLATFORM_FEE} FTMs `);
+            expect(weiToEther(balance4)*1 - weiToEther(balance2)*1).to.be.equal(PLATFORM_FEE*1);
+
+            console.log(`
+            *Event Minted should be emitted with correct values: 
+            tokenId = 1, 
+            beneficiary = ${artist}, 
+            tokenUri = ${'http://artist.com/art.jpeg'},
+            minter = ${artist}`);
+            expectEvent.inLogs(result.logs, 'Minted',{
+                tokenId: new BN('1'),
+                beneficiary: artist,
+                tokenUri : 'http://artist.com/art.jpeg',
+                minter : artist
+            });
+
+            console.log(`
+            The artist approves the nft to the auction`);
+            await this.artion.setApprovalForAll(this.fantomAuction.address, true, {from: artist});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 09:00:00`);
+            await this.fantomAuction.setTime(new BN('1632560400'));
+
+            console.log(`
+            The artist auctions his nfts with reserve price of 20 wFTMs`);
+            result =  await this.fantomAuction.createAuction(
+                this.artion.address,
+                new BN('1'),
+                this.mockERC20.address,
+                ether('20'),
+                new BN('1632564000'),  //2021-09-25 10:00:00
+                false,
+                new BN('1632996000'),   //2021-09-30 10:00:00
+                { from: artist }
+            );
+
+            console.log(`
+            *Event AuctionCreated should be emitted with correct values: 
+            nftAddress = ${this.artion.address}, 
+            tokenId = 1, 
+            payToken = ${this.mockERC20.address}`);
+            expectEvent.inLogs(result.logs, 'AuctionCreated',{
+                nftAddress: this.artion.address,
+                tokenId: new BN('1'),
+                payToken: this.mockERC20.address
+            });
+
+            console.log(`
+            Mint 50 wFTMs to bidder1 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder1, ether('50'));
+
+            console.log(`
+            Bidder1 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder1});
+
+            console.log(`
+            Mint 50 wFTMs to bidder2 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder2, ether('50'));
+
+            console.log(`
+            Bidder2 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder2});
+
+            console.log(`
+            Mint 50 wFTMs to bidder3 so he can bid the auctioned nft`);
+            await this.mockERC20.mint(bidder3, ether('50'));
+
+            console.log(`
+            Bidder3 approves FantomAuction to transfer up to 50 wFTM`);
+            await this.mockERC20.approve(this.fantomAuction.address, ether('50'), {from: bidder3});
+
+            console.log(`
+            Let's mock that the current time: 2021-09-25 10:30:00`);
+            await this.fantomAuction.setTime(new BN('1632565800'));
+
+            console.log(`
+            Bidder1 place a bid of 25 wFTMs`);
+            await this.fantomAuction.placeBid(this.artion.address, new BN('1'), ether('25'), { from: bidder1 });
+
+            balance = await this.mockERC20.balanceOf(bidder1);
+            console.log(`
+            *Bidder1's wFTM balance after bidding should be 25 wFTMs`);
+            expect(weiToEther(balance)*1).to.be.equal(25);
+
+            console.log(`
+            Bidder2 place a bid of 23 wFTMs`);
+            await expectRevert(this.fantomAuction.placeBid(this.artion.address, new BN('1'), ether('23'), { from: bidder2 }), 'failed to outbid highest bidder');
+            
+            console.log('');
+
+        })
        
     });
 });
