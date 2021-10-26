@@ -69,18 +69,6 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
         address payToken
     );
 
-    event UpdateAuctionEndTime(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 endTime
-    );
-
-    event UpdateAuctionStartTime(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 startTime
-    );
-
     event UpdateAuctionReservePrice(
         address indexed nftAddress,
         uint256 indexed tokenId,
@@ -796,75 +784,6 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
             auction.payToken,
             _reservePrice
         );
-    }
-
-    /**
-     @notice Update the current start time for an auction
-     @dev Only admin
-     @dev Auction must exist
-     @param _nftAddress ERC 721 Address
-     @param _tokenId Token ID of the NFT being auctioned
-     @param _startTime New start time (unix epoch in seconds)
-     */
-    function updateAuctionStartTime(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint256 _startTime
-    ) external {
-        Auction storage auction = auctions[_nftAddress][_tokenId];
-
-        require(_msgSender() == auction.owner, "sender must be owner");
-
-        require(_startTime > 0, "invalid start time");
-
-        require(auction.startTime + 60 > hardhatBlockTimestamp, "auction already started");
-
-        require(
-            _startTime + 300 < auction.endTime,
-            "start time should be less than end time (by 5 minutes)"
-        );
-
-        // Ensure auction not already resulted
-        require(!auction.resulted, "auction already resulted");
-
-        require(auction.endTime > 0, "no auction exists");
-
-        auction.startTime = _startTime;
-        emit UpdateAuctionStartTime(_nftAddress, _tokenId, _startTime);
-    }
-
-    /**
-     @notice Update the current end time for an auction
-     @dev Only admin
-     @dev Auction must exist
-     @param _nftAddress ERC 721 Address
-     @param _tokenId Token ID of the NFT being auctioned
-     @param _endTimestamp New end time (unix epoch in seconds)
-     */
-    function updateAuctionEndTime(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint256 _endTimestamp
-    ) external {
-        Auction storage auction = auctions[_nftAddress][_tokenId];
-
-        require(_msgSender() == auction.owner, "sender must be owner");
-
-        // Check the auction has not ended
-        require(hardhatBlockTimestamp < auction.endTime, "auction already ended");
-
-        require(auction.endTime > 0, "no auction exists");
-        require(
-            auction.startTime < _endTimestamp,
-            "end time must be greater than start"
-        );
-        require(
-            _endTimestamp > hardhatBlockTimestamp + 300,
-            "auction should end after 5 minutes"
-        );
-
-        auction.endTime = _endTimestamp;
-        emit UpdateAuctionEndTime(_nftAddress, _tokenId, _endTimestamp);
     }
 
     /**

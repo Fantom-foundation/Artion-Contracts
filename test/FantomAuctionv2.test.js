@@ -47,6 +47,15 @@ describe('FantomAuction', function () {
 
     // Set global variables
     const ZERO = new BigNumber.from("0");
+    const ONE = new BigNumber.from("1");
+    const TWO = new BigNumber.from("2");
+    const THREE = new BigNumber.from("3");
+    const FOUR = new BigNumber.from("4");
+    const FIVE = new BigNumber.from("5");
+    const SIX = new BigNumber.from("6");
+    const SEVEN = new BigNumber.from("7");
+    const EIGHT = new BigNumber.from("8");
+    const NINE = new BigNumber.from("9");
     /*
     const decimalPlaces = 18;
     const amount = ethers.utils.parseUnits('2000.0', decimalPlaces);
@@ -64,6 +73,7 @@ describe('FantomAuction', function () {
 
     // Set user `seller` variables for `FantomAuction`
     const sellerReservePrice = new BigNumber.from("100000000000000000000"); // 100 FTM
+    const sellerNewReservePrice = new BigNumber.from("50000000000000000000"); // 50 FTM
     const sellerTokenIdToSell = new BigNumber.from("4"); // Testing using NFT _tokenId: 4
     const secondSellerTokenIdToSell = new BigNumber.from("5"); // Testing using NFT _tokenId: 5
 
@@ -239,8 +249,8 @@ describe('FantomAuction', function () {
     it('002) `MockERC721` tokens minted to users properly', async function() {
         // Mint NFT's for test users
         await mockerc721.connect(owner).mint(owner.address);
-        await mockerc721.connect(owner).mint(bidder.address);
-        await mockerc721.connect(owner).mint(bidder.address);
+        await mockerc721.connect(owner).mint(seller.address);
+        await mockerc721.connect(owner).mint(seller.address);
         await mockerc721.connect(owner).mint(seller.address);
         await mockerc721.connect(owner).mint(seller.address); // Testing `createAuction()` using this NFT (_tokenId: 4)
         await mockerc721.connect(owner).mint(seller.address);
@@ -250,8 +260,8 @@ describe('FantomAuction', function () {
         await mockerc721.connect(owner).mint(other.address);
 
         var nftBalanceOfOwner = new BigNumber.from("1"); 
-        var nftBalanceOfBidder = new BigNumber.from("2");
-        var nftBalanceOfSeller = new BigNumber.from("3");
+        var nftBalanceOfBidder = new BigNumber.from("0");
+        var nftBalanceOfSeller = new BigNumber.from("5");
         var nftBalanceOfOther = new BigNumber.from("4");
 
         // Test if the MockERC721 `balanceOf` reflects properly before continuing with unit tests on auctions
@@ -2108,6 +2118,180 @@ describe('FantomAuction', function () {
         expect(await mockerc20.connect(owner).balanceOf(
             fantomauction.address)
         ).to.be.bignumber.equal(ZERO);
+    });
+
+    // Test case **ID: A84**:: 
+    it('089) successfully listed auction for `seller` `_tokenId(2)`', async function () {
+        await expect(
+            fantomauction.connect(seller).createAuction(
+                mockerc721.address,
+                TWO,
+                mockerc20.address,
+                sellerReservePrice,
+                new BigNumber.from(Number(await time.latest())+1),
+                false,
+                new BigNumber.from(Number(await time.latest())+604800)))
+            .to.emit(fantomauction, 'AuctionCreated')
+            .withArgs(mockerc721.address, TWO, mockerc20.address);
+    });
+
+    // Increase blockchain time with a test expect (hardhat workaround)
+    it('blockchain time increased 500 seconds', async function () {
+        time.advanceBlock();
+        time.increaseTo(Number(await time.latest())+500);
+        time.advanceBlock();
+        expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+    });
+
+    // Test case **ID: A**:: Attempt to successfully place a bid at the `bidderBidAmountMinimum` by `bidder`
+    it('090) bid successfully placed at `bidderBidAmountMinimum` by `bidder`', async function () {
+        await expect(
+            fantomauction.connect(bidder).placeBid(
+                mockerc721.address,
+                TWO,
+                bidderBidAmountMinimum))
+            .to.emit(fantomauction, 'BidPlaced')
+            .withArgs(mockerc721.address, TWO, bidder.address, bidderBidAmountMinimum);
+    });
+
+    // Test case **ID: A**:: 
+    it('091) cannot withdraw a bid if youre not the current highest bidder', async function () {
+        await expect(fantomauction.connect(hacker).withdrawBid(
+            mockerc721.address,
+            TWO))
+        .to.be.revertedWith('you are not the highest bidder');
+    });
+
+    // Test case **ID: A**:: 
+    it('092) `bidder` cannot withdraw a bid before auction ends', async function () {
+        await expect(fantomauction.connect(bidder).withdrawBid(
+            mockerc721.address,
+            TWO))
+        .to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
+    });
+
+    // Test case **ID: A**:: 
+    it('093) cannot withdraw a bid if youre not the current highest bidder', async function () {
+        await expect(fantomauction.connect(hacker).updateAuctionReservePrice(
+            mockerc721.address,
+            TWO,
+            sellerNewReservePrice))
+        .to.be.revertedWith('Sender must be item owner and NFT must be in escrow');
+    });
+
+    // Test case **ID: A**:: 
+    it('094) `seller` cannot raise the auction reserve price', async function () {
+        const greaterReservePrice = new BigNumber.from("101000000000000000000") // 101 FTM
+        await expect(fantomauction.connect(seller).updateAuctionReservePrice(
+            mockerc721.address,
+            TWO,
+            greaterReservePrice))
+        .to.be.revertedWith('Reserve price can only be decreased');
+    });
+
+    // Test case **ID: A**:: 
+    it('095) `seller` successfully lowered reserve price to `sellerNewReservePrice`', async function () {
+        await expect(
+            fantomauction.connect(seller).updateAuctionReservePrice(
+                mockerc721.address,
+                TWO,
+                sellerNewReservePrice))
+            .to.emit(fantomauction, 'UpdateAuctionReservePrice')
+            .withArgs(mockerc721.address, TWO, mockerc20.address, sellerNewReservePrice);
+    });
+
+    // Test case **ID: A**:: Attempt to successfully place a bid at the `bidderBidAmountMinimum` by `bidder`
+    it('096) bid successfully placed at `sellerNewReservePrice` by `bidder`', async function () {
+        await expect(
+            fantomauction.connect(bidder).placeBid(
+                mockerc721.address,
+                TWO,
+                sellerNewReservePrice))
+            .to.emit(fantomauction, 'BidPlaced')
+            .withArgs(mockerc721.address, TWO, bidder.address, sellerNewReservePrice);
+    });
+
+    // Increase blockchain time with a test expect (hardhat workaround)
+    it('blockchain time increased 604250 seconds', async function () {
+        time.advanceBlock();
+        time.increaseTo(Number(await time.latest())+604250);
+        time.advanceBlock();
+        expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+    });
+
+    // Test case **ID: A**:: 
+    it('097) `bidder` cannot withdraw a bid immediately before auction ends', async function () {
+        await expect(fantomauction.connect(bidder).withdrawBid(
+            mockerc721.address,
+            TWO))
+        .to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
+    });
+
+    // Increase blockchain time with a test expect (hardhat workaround)
+    it('blockchain time increased 43000 seconds', async function () {
+        time.advanceBlock();
+        time.increaseTo(Number(await time.latest())+43000);
+        time.advanceBlock();
+        expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+    });
+
+    // Test case **ID: A**:: 
+    it('098) `bidder` cannot withdraw a bid immediately before grace window', async function () {
+        await expect(fantomauction.connect(bidder).withdrawBid(
+            mockerc721.address,
+            TWO))
+        .to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
+    });
+
+    // Increase blockchain time with a test expect (hardhat workaround)
+    it('blockchain time increased 500 seconds', async function () {
+        time.advanceBlock();
+        time.increaseTo(Number(await time.latest())+500);
+        time.advanceBlock();
+        expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+    });
+
+    // Increase blockchain time with a test expect (hardhat workaround)
+    it('blockchain time increased 500 seconds', async function () {
+        time.advanceBlock();
+        time.increaseTo(Number(await time.latest())+500);
+        time.advanceBlock();
+        expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+    });
+
+    // Test case **ID: A**:: 
+    it('099 `bidder` successfully withdrew bid once grace window started', async function () {
+        await expect(
+            fantomauction.connect(bidder).withdrawBid(
+                mockerc721.address,
+                TWO))
+            .to.emit(fantomauction, 'BidWithdrawn')
+            .withArgs(mockerc721.address, TWO, bidder.address, sellerNewReservePrice);
+    });
+
+    // Test case **ID: A**:: Attempt to result an auction as `seller`
+    it('100) cannot result an auction that ended and had the highest bidder withdraw', async function() {
+        await expect(fantomauction.connect(seller).resultAuction(
+            mockerc721.address,
+            TWO))
+        .to.be.revertedWith('no open bids');
+    });
+
+    // Test case **ID: A**:: 
+    it('101) successfully cancelled auction that ended successfully but had the bidder withdraw', async function() {
+        await expect(
+            fantomauction.connect(seller).cancelAuction(
+                mockerc721.address,
+                TWO))
+            .to.emit(fantomauction, 'AuctionCancelled')
+            .withArgs(mockerc721.address, TWO);
+    });
+
+    // Test case **ID: A**::
+    it('102) NFT successfully transferred back to seller', async function() {
+        const result = await mockerc721.connect(seller).ownerOf(TWO);
+
+        expect((result).toString()).to.equal(seller.address);
     });
 
 });
