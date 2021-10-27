@@ -1,4 +1,4 @@
-// scripts/13_deploy_mockerc20.js
+// scripts/1_deploy_mockerc20.js
 const {
     TREASURY_ADDRESS,
     AUCTION,

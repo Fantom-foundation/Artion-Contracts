@@ -111,7 +111,7 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
         uint256 indexed tokenId,
         address indexed winner,
         address payToken,
-        uint256 unitPrice,
+        int256 unitPrice,
         uint256 winningBid
     );
 
@@ -244,7 +244,7 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
         );
 
         require(
-            _payToken != address(0) ||
+            _payToken == address(0) ||
                 (addressRegistry.tokenRegistry() != address(0) &&
                     IFantomTokenRegistry(addressRegistry.tokenRegistry())
                         .enabled(_payToken)),
@@ -478,6 +478,31 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
             "auction not approved"
         );
 
+        _resultAuction(_nftAddress, _tokenId);
+    }
+
+    /**
+     @notice Closes a finished auction and rewards the highest bidder
+     @dev Only admin or smart contract
+     @dev Auction can only be resulted if there has been a bidder and reserve met.
+     @dev If there have been no bids, the auction needs to be cancelled instead using `cancelAuction()`
+     @param _nftAddress ERC 721 Address
+     @param _tokenId Token ID of the item being auctioned
+     */
+    function _resultAuction(address _nftAddress, uint256 _tokenId)
+        internal
+    {
+        // Check the auction to see if it can be resulted
+        Auction storage auction = auctions[_nftAddress][_tokenId];
+
+        // Store auction owner
+        address seller = auction.owner;
+
+        // Get info on who the highest bidder is
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        address winner = highestBid.bidder;
+        uint256 winningBid = highestBid.bid;
+
         // Result the auction
         auction.resulted = true;
 
@@ -515,7 +540,6 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
             payAmount = winningBid;
         }
 
-        /*
         IFantomMarketplace marketplace = IFantomMarketplace(
             addressRegistry.marketplace()
         );
@@ -555,7 +579,7 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
                 payAmount = payAmount.sub(royaltyFee);
             }
         }
-        */
+        
 
         if (payAmount > 0) {
             //if (auction.payToken == address(0)) {
@@ -578,11 +602,12 @@ contract FantomAuction is ERC721Holder, OwnableUpgradeable, ReentrancyGuardUpgra
             winner,
             _tokenId
         );
-        /*
+        
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
-        */
-        uint256 price = payAmount;//IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
+
+        int256 price = 0;
+        //int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
 
         emit AuctionResulted(
             _msgSender(),

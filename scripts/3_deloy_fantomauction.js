@@ -1,4 +1,4 @@
-// scripts/14_deploy_fantomauction.js
+// scripts/3_deploy_fantomauction.js
 const {
     TREASURY_ADDRESS,
     AUCTION,
@@ -13,7 +13,7 @@ async function main () {
     console.log('Deploying FantomAuction...');
     const fantomauction = await FantomAuction.deploy();
     await fantomauction.deployed();
-    console.log('FantomAuction deployed to:', box.address);
+    console.log('FantomAuction deployed to:', fantomauction.address);
   }
   
   main()
