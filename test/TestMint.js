@@ -6,6 +6,12 @@ const { ethers } = require('hardhat');
 const { BigNumber } = require('ethers');
 
 const {
+  sellerReservePrice,
+  sellerNewReservePrice,
+  bidderBidAmountMinimum
+} = require('./utils/auction.js');
+
+const {
   ZERO,
   ONE,
   FOUR,
@@ -14,13 +20,10 @@ const {
   mockPayTokenSymbol,
   mockPayTokenMintAmount,
   mockNFTokenName,
-  mockNFTokenSymbol,
-  sellerReservePrice,
-  sellerNewReservePrice,
-  bidderBidAmountMinimum
-} = require('../utils/auction.js');
+  mockNFTokenSymbol
+} = require('./utils/index.js');
 
-contract('FantomAuction', async function () {
+describe('Mock', async function () {
   let mockERC20;
   let mockERC721;
 
