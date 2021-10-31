@@ -75,31 +75,33 @@ contract("FantomMarketplace test", function([
     );
   });
 
-  it("An artist mints an NFT then list it on the marketplace with price of 20 wFTM", async function() {
-    //An artist mints an NFT
-    await this.mockERC721.mint(artist, { from: artist });
+  describe("Minting and listing an NFT", function() {
+    it("An artist mints an NFT then list it on the marketplace with price of 20 wFTM", async function() {
+      //An artist mints an NFT
+      await this.mockERC721.mint(artist, { from: artist });
 
-    //The artist approves the marketplace
-    await this.mockERC721.setApprovalForAll(
-      this.fantomMarketplace.address,
-      true,
-      {
-        from: artist,
-      }
-    );
+      //The artist approves the marketplace
+      await this.mockERC721.setApprovalForAll(
+        this.fantomMarketplace.address,
+        true,
+        {
+          from: artist,
+        }
+      );
 
-    //Let's mock that the current time: 2021-09-21 10:00:00`);
-    await this.fantomMarketplace.setTime(new BN("1632218400"));
+      //Let's mock that the current time: 2021-09-21 10:00:00`);
+      await this.fantomMarketplace.setTime(new BN("1632218400"));
 
-    //The artist lists the nft on the marketplace with price 20 wFTM and and start time 2021-09-22 10:00:00 GMT`);
-    let result = await this.fantomMarketplace.listItem(
-      this.mockERC721.address,
-      ZERO,
-      ONE,
-      this.mockERC20.address,
-      ether("20"),
-      new BN("1632304800"), // 2021-09-22 10:00:00 GMT
-      { from: artist }
-    );
+      //The artist lists the nft on the marketplace with price 20 wFTM and and start time 2021-09-22 10:00:00 GMT`);
+      let result = await this.fantomMarketplace.listItem(
+        this.mockERC721.address,
+        ZERO,
+        ONE,
+        this.mockERC20.address,
+        ether("20"),
+        new BN("1632304800"), // 2021-09-22 10:00:00 GMT
+        { from: artist }
+      );
+    });
   });
 });
