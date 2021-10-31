@@ -1,9 +1,9 @@
-const hre = require('hardhat');
-const { expectRevert, time } = require('@openzeppelin/test-helpers');
-const { solidity } = require('ethereum-waffle');
-const { expect } = require('chai').use(solidity);
-const { ethers } = require('hardhat');
-const { BigNumber } = require('ethers');
+const hre = require("hardhat");
+const { expectRevert, time } = require("@openzeppelin/test-helpers");
+const { solidity } = require("ethereum-waffle");
+const { expect } = require("chai").use(solidity);
+const { ethers } = require("hardhat");
+const { BigNumber } = require("ethers");
 
 const {
   ZERO,
@@ -14,10 +14,10 @@ const {
   mockPayTokenSymbol,
   mockPayTokenMintAmount,
   mockNFTokenName,
-  mockNFTokenSymbol
-} = require('./utils/index.js');
+  mockNFTokenSymbol,
+} = require("./utils/index_ethers.js");
 
-describe('Mint', async function () {
+describe("Mint", async function () {
   let mockERC20;
   let mockERC721;
 
@@ -26,9 +26,9 @@ describe('Mint', async function () {
   let owner, seller, other;
 
   before(async function () {
-    const MockERC20 = await ethers.getContractFactory('MockERC20');
-    const MockERC721 = await ethers.getContractFactory('MockERC721');
-    const FantomAuction = await ethers.getContractFactory('FantomAuction');
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const MockERC721 = await ethers.getContractFactory("MockERC721");
+    const FantomAuction = await ethers.getContractFactory("FantomAuction");
 
     [owner, seller, other] = await ethers.getSigners();
 
@@ -46,9 +46,9 @@ describe('Mint', async function () {
     await fantomAuction.deployed();
   });
 
-  describe('MockERC20 tokens minted to users', function () {
+  describe("MockERC20 tokens minted to users", function () {
     // Test if the ERC20 pay tokens were minted properly
-    it('Owner', async () => {
+    it("Owner", async () => {
       await mockERC20
         .connect(owner)
         .mintPay(owner.address, mockPayTokenMintAmount);
@@ -57,7 +57,7 @@ describe('Mint', async function () {
       ).to.equal(mockPayTokenMintAmount.toString());
     });
 
-    it('Seller', async () => {
+    it("Seller", async () => {
       await mockERC20
         .connect(owner)
         .mintPay(seller.address, mockPayTokenMintAmount);
@@ -66,7 +66,7 @@ describe('Mint', async function () {
       ).to.equal(mockPayTokenMintAmount.toString());
     });
 
-    it('Other', async () => {
+    it("Other", async () => {
       await mockERC20
         .connect(owner)
         .mintPay(other.address, mockPayTokenMintAmount);
@@ -76,8 +76,8 @@ describe('Mint', async function () {
     });
   });
 
-  describe('MockERC20 approve set to FantomAuction for all users', function () {
-    it('Owner', async () => {
+  describe("MockERC20 approve set to FantomAuction for all users", function () {
+    it("Owner", async () => {
       await mockERC20
         .connect(owner)
         .approve(fantomAuction.address, mockPayTokenMintAmount);
@@ -89,7 +89,7 @@ describe('Mint', async function () {
       ).to.be.bignumber.equal(mockPayTokenMintAmount);
     });
 
-    it('Seller', async () => {
+    it("Seller", async () => {
       await mockERC20
         .connect(seller)
         .approve(fantomAuction.address, mockPayTokenMintAmount);
@@ -101,7 +101,7 @@ describe('Mint', async function () {
       ).to.be.bignumber.equal(mockPayTokenMintAmount);
     });
 
-    it('Other', async () => {
+    it("Other", async () => {
       await mockERC20
         .connect(other)
         .approve(fantomAuction.address, mockPayTokenMintAmount);
@@ -114,15 +114,15 @@ describe('Mint', async function () {
     });
   });
 
-  describe('MockERC721 tokens minted to users properly', function () {
-    it('Owner', async () => {
+  describe("MockERC721 tokens minted to users properly", function () {
+    it("Owner", async () => {
       await mockERC721.connect(owner).mint(owner.address);
       expect(
         await mockERC721.connect(owner).balanceOf(owner.address)
       ).to.be.bignumber.equal(ONE);
     });
 
-    it('Seller', async () => {
+    it("Seller", async () => {
       // 5 NFTS
       await mockERC721.connect(owner).mint(seller.address);
       await mockERC721.connect(owner).mint(seller.address);
@@ -134,7 +134,7 @@ describe('Mint', async function () {
         await mockERC721.connect(owner).balanceOf(seller.address)
       ).to.be.bignumber.equal(FIVE);
     });
-    it('Other', async () => {
+    it("Other", async () => {
       await mockERC721.connect(owner).mint(other.address);
       await mockERC721.connect(owner).mint(other.address);
       await mockERC721.connect(owner).mint(other.address);
@@ -146,9 +146,9 @@ describe('Mint', async function () {
     });
   });
 
-  describe('MockERC721 `setApprovalForAll` set to `FantomAuction` for all test users', function () {
+  describe("MockERC721 `setApprovalForAll` set to `FantomAuction` for all test users", function () {
     // Test if the MockERC721 `isApprovedForAll` is properly set to the `FantomAuction` instance
-    it('Owner', async function () {
+    it("Owner", async function () {
       await mockERC721
         .connect(owner)
         .setApprovalForAll(fantomAuction.address, true);
@@ -159,7 +159,7 @@ describe('Mint', async function () {
       );
     });
 
-    it('Seller', async function () {
+    it("Seller", async function () {
       await mockERC721
         .connect(seller)
         .setApprovalForAll(fantomAuction.address, true);
@@ -170,7 +170,7 @@ describe('Mint', async function () {
       );
     });
 
-    it('Other', async function () {
+    it("Other", async function () {
       await mockERC721
         .connect(other)
         .setApprovalForAll(fantomAuction.address, true);
