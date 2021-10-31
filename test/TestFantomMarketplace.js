@@ -76,7 +76,8 @@ contract("FantomMarketplace test", function([
   });
 
   describe("Minting and listing an NFT", function() {
-    it("An artist mints an NFT then list it on the marketplace with price of 20 wFTM", async function() {
+    it(`An artist mints an NFT then lists it on the marketplace 
+        with price of 20 wFTM`, async function() {
       //An artist mints an NFT
       await this.mockERC721.mint(artist, { from: artist });
 
