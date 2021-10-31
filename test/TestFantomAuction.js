@@ -1,18 +1,18 @@
-const hre = require('hardhat');
-const { expectRevert, time } = require('@openzeppelin/test-helpers');
-const { solidity } = require('ethereum-waffle');
-const { expect } = require('chai').use(solidity);
-const { ethers } = require('hardhat');
-const { BigNumber } = require('ethers');
+const hre = require("hardhat");
+const { expectRevert, time } = require("@openzeppelin/test-helpers");
+const { solidity } = require("ethereum-waffle");
+const { expect } = require("chai").use(solidity);
+const { ethers } = require("hardhat");
+const { BigNumber } = require("ethers");
 
-const MockERC20 = artifacts.require('MockERC20');
-const MockERC721 = artifacts.require('MockERC721');
-const FantomAuction = artifacts.require('FantomAuction');
-const FantomArtion = artifacts.require('Artion');
-const FantomMarketplace = artifacts.require('FantomMarketplace');
-const FantomBundleMarketplace = artifacts.require('FantomBundleMarketplace');
-const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
-const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
+const MockERC20 = artifacts.require("MockERC20");
+const MockERC721 = artifacts.require("MockERC721");
+const FantomAuction = artifacts.require("FantomAuction");
+const FantomArtion = artifacts.require("Artion");
+const FantomMarketplace = artifacts.require("FantomMarketplace");
+const FantomBundleMarketplace = artifacts.require("FantomBundleMarketplace");
+const FantomAddressRegistry = artifacts.require("FantomAddressRegistry");
+const FantomTokenRegistry = artifacts.require("FantomTokenRegistry");
 
 const {
   ZERO,
@@ -23,15 +23,15 @@ const {
   mockPayTokenSymbol,
   mockPayTokenMintAmount,
   mockNFTokenName,
-  mockNFTokenSymbol
-} = require('./utils/index.js');
+  mockNFTokenSymbol,
+} = require("./utils/index.js");
 
-const {} = require('./utils/auction.js');
+const {} = require("./utils/auction.js");
 
-contract('FantomAuction', function (accounts) {
+contract("FantomAuction", function(accounts) {
   let owner, bidder, seller, winner, hacker, other;
 
-  before(async function () {
+  before(async function() {
     [owner, bidder, seller, winner, hacker, other] = accounts;
     this.mockERC20 = await MockERC20.new(
       mockPayTokenName,
@@ -48,26 +48,26 @@ contract('FantomAuction', function (accounts) {
     this.fantomTokenRegistry = await FantomTokenRegistry.new();
 
     await this.mockERC20.mintPay(owner, mockPayTokenMintAmount, {
-      from: owner
+      from: owner,
     });
     await this.mockERC20.mintPay(bidder, mockPayTokenMintAmount, {
-      from: owner
+      from: owner,
     });
     await this.mockERC20.mintPay(seller, mockPayTokenMintAmount, {
-      from: owner
+      from: owner,
     });
     await this.mockERC20.mintPay(winner, mockPayTokenMintAmount, {
-      from: owner
+      from: owner,
     });
     await this.mockERC20.mintPay(other, mockPayTokenMintAmount, {
-      from: owner
+      from: owner,
     });
 
     await this.mockERC20.approve(
       this.fantomAuction.address,
       mockPayTokenMintAmount,
       {
-        from: owner
+        from: owner,
       }
     );
     await this.mockERC20.approve(
@@ -101,27 +101,27 @@ contract('FantomAuction', function (accounts) {
     await this.mockERC721.mint(other, { from: owner });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: owner
+      from: owner,
     });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: bidder
+      from: bidder,
     });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: seller
+      from: seller,
     });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: winner
+      from: winner,
     });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: other
+      from: other,
     });
 
     await this.mockERC721.setApprovalForAll(this.fantomAuction.address, true, {
-      from: hacker
+      from: hacker,
     });
   });
 
@@ -132,7 +132,7 @@ contract('FantomAuction', function (accounts) {
   //   });
 
   // Test case **ID: A0**:: Set and check if owner is correctly initialized
-  it('`owner` returns the initialized owner', async function () {
+  it("`owner` returns the initialized owner", async function() {
     // Call `initialize()`  and store owner address
     await this.fantomAuction.initialize(owner, { from: owner });
 
@@ -153,7 +153,7 @@ contract('FantomAuction', function (accounts) {
   //   });
 
   // Test case **ID: A2**:: Set and check address registry
-  it('`FantomAuction` address registry set to `FantomAddressRegistry`', async function () {
+  it("`FantomAuction` address registry set to `FantomAddressRegistry`", async function() {
     await this.fantomAuction.updateAddressRegistry(
       this.fantomAddressRegistry.address,
       { from: owner }
