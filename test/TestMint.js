@@ -19,7 +19,7 @@ const {
   mockPayTokenMintAmount,
   mockNFTokenName,
   mockNFTokenSymbol
-} = require('./utils/index_ethers.js');
+} = require('./utils/index.js');
 
 contract('Mint', async function ([owner, seller, other]) {
   let mockERC20;
