@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./library/ERC1155.sol";
 import "./library/ERC1155MintBurn.sol";
 import "./library/ERC1155Metadata.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract OwnableDelegateProxy {}
 
@@ -25,6 +26,8 @@ contract FantomArtTradable is
     ERC1155Metadata,
     Ownable
 {
+    using SafeMath for uint256;
+
     uint256 private _currentTokenID = 0;
 
     // Optional mapping for token URIs

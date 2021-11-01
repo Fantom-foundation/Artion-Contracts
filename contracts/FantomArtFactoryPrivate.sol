@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FantomArtTradablePrivate.sol";
@@ -105,7 +105,7 @@ contract FantomArtFactoryPrivate is Ownable {
         returns (address)
     {
         require(msg.value >= platformFee, "Insufficient funds.");
-        (bool success,) = feeRecipient.call{value: msg.value}("");
+        (bool success, ) = feeRecipient.call{value: msg.value}("");
         require(success, "Transfer failed");
 
         FantomArtTradablePrivate nft = new FantomArtTradablePrivate(
@@ -128,8 +128,16 @@ contract FantomArtFactoryPrivate is Ownable {
         external
         onlyOwner
     {
-        require(!exists[tokenContractAddress], "Art contract already registered");
-        require(IERC165(tokenContractAddress).supportsInterface(INTERFACE_ID_ERC1155), "Not an ERC1155 contract");
+        require(
+            !exists[tokenContractAddress],
+            "Art contract already registered"
+        );
+        require(
+            IERC165(tokenContractAddress).supportsInterface(
+                INTERFACE_ID_ERC1155
+            ),
+            "Not an ERC1155 contract"
+        );
         exists[tokenContractAddress] = true;
         emit ContractCreated(_msgSender(), tokenContractAddress);
     }
