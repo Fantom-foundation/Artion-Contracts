@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
 import "../FantomAuction.sol";
 
@@ -13,7 +13,7 @@ contract FantomAuctionMock is FantomAuction {
         nowOverride = _now;
     }
 
-    function _getNow() internal override view returns (uint256) {
+    function _getNow() internal view override returns (uint256) {
         return nowOverride;
     }
 }

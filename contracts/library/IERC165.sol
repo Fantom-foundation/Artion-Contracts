@@ -1,10 +1,10 @@
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
+
 /**
  * @title ERC165
  * @dev https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md
  */
 interface IERC165 {
-
     /**
      * @notice Query if a contract implements an interface
      * @dev Interface identification is specified in ERC-165. This function
@@ -12,7 +12,7 @@ interface IERC165 {
      * @param _interfaceId The interface identifier, as specified in ERC-165
      */
     function supportsInterface(bytes4 _interfaceId)
-    external
-    view
-    returns (bool);
+        external
+        view
+        returns (bool);
 }

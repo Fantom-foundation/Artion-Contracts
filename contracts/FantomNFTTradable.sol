@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 /**
  * @title FantomNFTTradable
  * FantomNFTTradable - ERC721 contract that whitelists a trading address, and has minting functionality.
  */
-contract FantomNFTTradable is ERC721, Ownable {
+contract FantomNFTTradable is ERC721URIStorage, Ownable {
+    using SafeMath for uint256;
+
     /// @dev Events of the contract
     event Minted(
         uint256 tokenId,
@@ -17,12 +20,8 @@ contract FantomNFTTradable is ERC721, Ownable {
         string tokenUri,
         address minter
     );
-    event UpdatePlatformFee(
-        uint256 platformFee
-    );
-    event UpdateFeeRecipient(
-        address payable feeRecipient
-    );
+    event UpdatePlatformFee(uint256 platformFee);
+    event UpdateFeeRecipient(address payable feeRecipient);
 
     address auction;
     address marketplace;
@@ -88,7 +87,7 @@ contract FantomNFTTradable is ERC721, Ownable {
         _incrementTokenId();
 
         // Send FTM fee to fee recipient
-        (bool success,) = feeReceipient.call{value : msg.value}("");
+        (bool success, ) = feeReceipient.call{value: msg.value}("");
         require(success, "Transfer failed");
 
         emit Minted(newTokenId, _to, _tokenUri, _msgSender());
@@ -128,17 +127,23 @@ contract FantomNFTTradable is ERC721, Ownable {
     /**
      * @dev checks the given token ID is approved either for all or the single token ID
      */
-    function isApproved(uint256 _tokenId, address _operator) public view returns (bool) {
-        return isApprovedForAll(ownerOf(_tokenId), _operator) || getApproved(_tokenId) == _operator;
+    function isApproved(uint256 _tokenId, address _operator)
+        public
+        view
+        returns (bool)
+    {
+        return
+            isApprovedForAll(ownerOf(_tokenId), _operator) ||
+            getApproved(_tokenId) == _operator;
     }
 
     /**
      * Override isApprovedForAll to whitelist Fantom contracts to enable gas-less listings.
      */
     function isApprovedForAll(address owner, address operator)
-        override
         public
         view
+        override
         returns (bool)
     {
         // Whitelist Fantom auction, marketplace, bundle marketplace contracts for easy trading.
@@ -156,8 +161,16 @@ contract FantomNFTTradable is ERC721, Ownable {
     /**
      * Override _isApprovedOrOwner to whitelist Fantom contracts to enable gas-less listings.
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) override internal view returns (bool) {
-        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+    function _isApprovedOrOwner(address spender, uint256 tokenId)
+        internal
+        view
+        override
+        returns (bool)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721: operator query for nonexistent token"
+        );
         address owner = ERC721.ownerOf(tokenId);
         if (isApprovedForAll(owner, spender)) return true;
         return super._isApprovedOrOwner(spender, tokenId);
