@@ -1,14 +1,17 @@
-require('dotenv').config();
+//require('dotenv').config();
 require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-truffle5');
-require('@nomiclabs/hardhat-etherscan');
+require("@nomiclabs/hardhat-etherscan");
+require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
 require('@nomiclabs/hardhat-solhint');
 require('hardhat-contract-sizer');
 require('@openzeppelin/hardhat-upgrades');
+require('@openzeppelin/test-helpers');
+require("@nomiclabs/hardhat-web3");
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+//const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 module.exports = {
   solidity: {
@@ -29,17 +32,17 @@ module.exports = {
     mainnet: {
       url: `https://rpcapi.fantom.network`,
       chainId: 250,
-      accounts: [`0x${PRIVATE_KEY}`]
+      //accounts: [`0x${PRIVATE_KEY}`]
     },
     testnet: {
       url: `https://rpc.testnet.fantom.network`,
       chainId: 4002,
-      accounts: [`0x${PRIVATE_KEY}`]
+      //accounts: [`0x${PRIVATE_KEY}`]
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161`,
       chainId: 3,
-      accounts: [`0x${PRIVATE_KEY}`]
+      //accounts: [`0x${PRIVATE_KEY}`]
     },
     coverage: {
       url: 'http://localhost:8555'
