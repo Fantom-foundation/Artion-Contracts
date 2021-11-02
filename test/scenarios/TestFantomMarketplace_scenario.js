@@ -21,13 +21,13 @@ const {
   mockPayTokenMintAmount,
   mockNFTokenName,
   mockNFTokenSymbol
-} = require('./utils/index.js');
+} = require('../utils/index.js');
 
 const {
   platformFee,
   marketPlatformFee,
   mintFee
-} = require('./utils/marketplace');
+} = require('../utils/marketplace');
 
 const FantomMarketplace = artifacts.require('MockFantomMarketplace');
 const FantomBundleMarketplace = artifacts.require('FantomBundleMarketplace');
@@ -364,14 +364,57 @@ contract('FantomMarketplace test', function([
 
   describe('Minting and listing an NFT reverts', function() {
     it(`An artist mints an NFT then lists it on the marketplace with price of 20 wFTM.
-        *Check if the nft is now on the listing.
-        After the listing starts a buyer purchases the nft.
-        *Check if ItemListed and ItemSold events are emitted correctly.
-        *Check if the artist receives the correct amount of wFTMs.
-        *Check if the wFTM balance of the buyer is correct.
-        *Check if the marketplace contract gets the fees correctly.
-        *Check if the nft now is no longer on the listing
-        *Check if the nft now belongs to the buyer`, async function() {
+        Before the listing starts a buyer tries to purchases the nft.        
+        It should cause revert 'item not buyable'`, async function() {
+      //An artist mints an NFT
+      let result = await this.mockERC721.mint(artist, { from: artist });
+
+      let tokenId = result.logs[0].args.tokenId;
+
+      //The artist approves the marketplace
+      await this.mockERC721.setApprovalForAll(
+        this.fantomMarketplace.address,
+        true,
+        {
+          from: artist
+        }
+      );
+
+      //Let's mock that the current time: 2021-09-21 10:00:00`);
+      await this.fantomMarketplace.setTime(new BN('1632218400'));
+
+      //The artist lists the nft on the marketplace with price 20 wFTM and and start time 2021-09-22 10:00:00 GMT`);
+      await this.fantomMarketplace.listItem(
+        this.mockERC721.address,
+        tokenId,
+        ONE,
+        this.mockERC20.address,
+        ether('20'),
+        new BN('1632304800'), // 2021-09-22 10:00:00 GMT
+        { from: artist }
+      );
+
+      //Let's mint 100 wFTMs to the buyer so he/she can purchase the nft
+      await this.mockERC20.mintPay(buyer, ether('100'));
+
+      //The buyer approve his/her wFTM to the marketplace
+      await this.mockERC20.approve(
+        this.fantomMarketplace.address,
+        ether('20'),
+        { from: buyer }
+      );
+
+      //The buyer tries to purchase the nft but it will fail with 'item not buyable'
+      await expectRevert(
+        this.fantomMarketplace.buyItem(
+          this.mockERC721.address,
+          tokenId,
+          this.mockERC20.address,
+          artist,
+          { from: buyer }
+        ),
+        'item not buyable'
+      );
     });
   });
 });
