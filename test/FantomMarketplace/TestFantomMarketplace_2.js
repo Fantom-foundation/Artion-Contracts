@@ -20,13 +20,13 @@ const {
   mockPayTokenMintAmount,
   mockNFTokenName,
   mockNFTokenSymbol
-} = require('./utils/index.js');
+} = require('../utils/index.js');
 
 const {
   platformFee,
   marketPlatformFee,
   mintFee
-} = require('./utils/marketplace');
+} = require('../utils/marketplace');
 
 const FantomMarketplace = artifacts.require('MockFantomMarketplace');
 const FantomBundleMarketplace = artifacts.require('FantomBundleMarketplace');
@@ -113,7 +113,7 @@ contract('FantomMarketplace test', function([
     );
   });
 
-  it('The artist try to list an nft without approving, which will cause "item not approved"', async function() {
+  it('The artist tries to list an nft without approving, which will cause "item not approved"', async function() {
     result = await this.mockERC721.mint(artist, { from: artist });
     tokenId = result.logs[0].args.tokenId;
     await expectRevert(

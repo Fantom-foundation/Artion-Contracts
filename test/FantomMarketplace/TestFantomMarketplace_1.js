@@ -20,13 +20,13 @@ const {
   mockPayTokenMintAmount,
   mockNFTokenName,
   mockNFTokenSymbol
-} = require('./utils/index.js');
+} = require('../utils/index.js');
 
 const {
   platformFee,
   marketPlatformFee,
   mintFee
-} = require('./utils/marketplace');
+} = require('../utils/marketplace');
 
 const FantomMarketplace = artifacts.require('MockFantomMarketplace');
 const FantomBundleMarketplace = artifacts.require('FantomBundleMarketplace');
