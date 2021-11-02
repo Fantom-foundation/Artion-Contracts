@@ -160,13 +160,13 @@ contract(
       });
     });
 
-    // // Do this after each unit test
-    // afterEach(async function () {
-    //   const timeNow = new BigNumber.from(Number(await time.latest()));
-    //   fantomAuction.hardhatTimestamp(timeNow, { from: owner });
-    // });
-
     describe('Place Bid', function () {
+      // Do this after each unit test
+      afterEach(async function () {
+        const timeNow = new BigNumber.from(Number(await time.latest()) + 10);
+        await fantomAuction.hardhatTimestamp(timeNow, { from: owner });
+      });
+
       before(async function () {
         await fantomAuction.createAuction(
           mockERC721.address,
@@ -179,7 +179,7 @@ contract(
           { from: seller }
         );
 
-        const timeNow = new BigNumber.from(Number(await time.latest()) + 10);
+        const timeNow = new BigNumber.from(Number(await time.latest()) + 5);
         await fantomAuction.hardhatTimestamp(timeNow, { from: owner });
       });
 
@@ -196,6 +196,22 @@ contract(
           1: ONE,
           2: bidder,
           3: bidderBidAmountMinimum
+        });
+      });
+
+      it('should place a higher bid [reserve price]', async function () {
+        let _placeBidEvent = await fantomAuction.placeBid(
+          mockERC721.address,
+          ONE,
+          sellerReservePrice,
+          { from: winner }
+        );
+
+        expectEvent(_placeBidEvent, 'BidPlaced', {
+          0: mockERC721.address,
+          1: ONE,
+          2: winner,
+          3: sellerReservePrice
         });
       });
 
