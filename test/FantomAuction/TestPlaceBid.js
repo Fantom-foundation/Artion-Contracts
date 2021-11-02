@@ -160,11 +160,11 @@ contract(
       });
     });
 
-    // Do this after each unit test
-    afterEach(async function () {
-      const timeNow = new BigNumber.from(Number(await time.latest()));
-      fantomAuction.hardhatTimestamp(timeNow, { from: owner });
-    });
+    // // Do this after each unit test
+    // afterEach(async function () {
+    //   const timeNow = new BigNumber.from(Number(await time.latest()));
+    //   fantomAuction.hardhatTimestamp(timeNow, { from: owner });
+    // });
 
     describe('Place Bid', function () {
       before(async function () {
@@ -178,13 +178,12 @@ contract(
           new BN(Number(await time.latest()) + 305),
           { from: seller }
         );
+
+        const timeNow = new BigNumber.from(Number(await time.latest()) + 10);
+        await fantomAuction.hardhatTimestamp(timeNow, { from: owner });
       });
 
       it('should place a bid', async function () {
-        time.advanceBlock();
-        time.increaseTo(Number(await time.latest()) + 50);
-        time.advanceBlock();
-
         let _placeBidEvent = await fantomAuction.placeBid(
           mockERC721.address,
           ONE,
