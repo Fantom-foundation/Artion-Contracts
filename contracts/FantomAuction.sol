@@ -316,6 +316,8 @@ contract FantomAuction is
         // Check the auction to see if this is a valid bid
         Auction memory auction = auctions[_nftAddress][_tokenId];
 
+        require(auction.endTime > 0, "No auction exists");
+
         // Ensure auction is in flight
         require(
             hardhatBlockTimestamp >= auction.startTime,
