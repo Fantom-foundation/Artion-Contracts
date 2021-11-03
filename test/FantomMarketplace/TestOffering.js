@@ -37,7 +37,7 @@ const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
-contract('FantomMarketplace - Buying Test', function([
+contract('FantomMarketplace - Offering Test', function([
   owner,
   platformFeeRecipient,
   artist,
@@ -51,6 +51,7 @@ contract('FantomMarketplace - Buying Test', function([
     let listing;
     let wFTMBalance;
     let nftOwner;
+    let offer;
 
     this.mockERC20 = await MockERC20.new(
       mockPayTokenName,
@@ -257,5 +258,91 @@ contract('FantomMarketplace - Buying Test', function([
       ),
       'offer already created'
     );
+  });
+
+  it(`A hacker tries to cancel the offer. He/She will fail with "offer not exists or expired"`, async function() {
+    await expectRevert(
+      this.fantomMarketplace.cancelOffer(this.mockERC721.address, ZERO, {
+        from: hacker
+      }),
+      'offer not exists or expired'
+    );
+  });
+
+  it(`The buyer cancels the offer. OfferCanceled event should be emitted`, async function() {
+    result = await this.fantomMarketplace.cancelOffer(
+      this.mockERC721.address,
+      ZERO,
+      { from: buyer }
+    );
+    expectEvent(result, 'OfferCanceled', {
+      creator: buyer,
+      nft: this.mockERC721.address,
+      tokenId: ZERO
+    });
+  });
+
+  it(`After the buyer cancels, the offer should be removed from the offer list`, async function() {
+    offer = await this.fantomMarketplace.offers(
+      this.mockERC721.address,
+      ZERO,
+      buyer
+    );
+    expect(offer.payToken).to.be.equal(constants.ZERO_ADDRESS);
+    expect(offer.deadline.toString()).to.be.equal(ZERO.toString());
+  });
+
+  it(`The buyer makes another offer after canceling the previous one. 
+      OfferCreated event should be emitted with correct values`, async function() {
+    //The buyer makes an offer for the nft for 18 wFTMs with deadline on 2021-09-22 15:00:00 GMT
+    result = await this.fantomMarketplace.createOffer(
+      this.mockERC721.address,
+      ZERO,
+      this.mockERC20.address,
+      ONE,
+      ether('18'),
+      new BN('1632322800'),
+      { from: buyer }
+    );
+
+    //Event OfferCreated should be emitted with correct values
+    expectEvent(result, 'OfferCreated', {
+      creator: buyer,
+      nft: this.mockERC721.address,
+      tokenId: ZERO,
+      quantity: ONE,
+      payToken: this.mockERC20.address,
+      pricePerItem: ether('18'),
+      deadline: new BN('1632322800')
+    });
+  });
+
+  it(`A hacker tries to accept the offer. He/She will fail with "not owning item"`, async function() {
+    await expectRevert(
+      this.fantomMarketplace.acceptOffer(this.mockERC721.address, ZERO, buyer, {
+        from: hacker
+      }),
+      'not owning item'
+    );
+  });
+
+  it('The seller tries to accept an offer whose deadline has passed. He/She will fail with "offer not exist or expired"', async function() {
+    //Let's mock the current time: 2021-09-23 15:00:00 GMT
+    await this.fantomMarketplace.setTime(new BN('1632409200'));
+
+    offer = await this.fantomMarketplace.offers(
+      this.mockERC721.address,
+      ZERO,
+      buyer
+    );
+    console.log(offer.deadline.toString());
+
+    let time = await this.fantomMarketplace.time();
+
+    console.log(time.toString());
+
+    this.fantomMarketplace.acceptOffer(this.mockERC721.address, ZERO, buyer, {
+      from: artist
+    });
   });
 });

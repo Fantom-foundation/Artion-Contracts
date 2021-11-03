@@ -329,9 +329,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _payToken,
         uint256 _newPrice
     ) external nonReentrant isListed(_nftAddress, _tokenId, _msgSender()) {
-        Listing storage listedItem = listings[_nftAddress][_tokenId][
-            _msgSender()
-        ];
+
+            Listing storage listedItem
+         = listings[_nftAddress][_tokenId][_msgSender()];
 
         _validOwner(_nftAddress, _tokenId, _msgSender(), listedItem.quantity);
 
@@ -530,6 +530,10 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
         Offer memory offer = offers[_nftAddress][_tokenId][_creator];
 
+        //require(offer.deadline > _getNow(), "offer has expired");
+        //require(offer.deadline == _getNow(), "offer has expired");
+        //require(offer.deadline < _getNow(), "offer has expired");
+
         _validOwner(_nftAddress, _tokenId, _msgSender(), offer.quantity);
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
@@ -643,9 +647,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 _feeRecipient
             );
         } else {
-            CollectionRoyalty storage collectionRoyalty = collectionRoyalties[
-                _nftAddress
-            ];
+
+                CollectionRoyalty storage collectionRoyalty
+             = collectionRoyalties[_nftAddress];
 
             collectionRoyalty.royalty = _royalty;
             collectionRoyalty.feeRecipient = _feeRecipient;
@@ -746,7 +750,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// Internal and Private ///
     ////////////////////////////
 
-    function _getNow() internal view virtual returns (uint256) {
+    function _getNow() internal virtual view returns (uint256) {
         return block.timestamp;
     }
 
