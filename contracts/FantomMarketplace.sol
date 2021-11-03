@@ -42,6 +42,7 @@ interface IFantomAuction {
             uint256,
             uint256,
             uint256,
+            uint256,
             bool
         );
 }
@@ -329,9 +330,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address _payToken,
         uint256 _newPrice
     ) external nonReentrant isListed(_nftAddress, _tokenId, _msgSender()) {
-
-            Listing storage listedItem
-         = listings[_nftAddress][_tokenId][_msgSender()];
+        Listing storage listedItem = listings[_nftAddress][_tokenId][
+            _msgSender()
+        ];
 
         _validOwner(_nftAddress, _tokenId, _msgSender(), listedItem.quantity);
 
@@ -474,16 +475,10 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "invalid nft address"
         );
 
-        IFantomAuction auction = IFantomAuction(addressRegistry.auction());
-
-        (, , , uint256 startTime, , bool resulted) = auction.auctions(
-            _nftAddress,
-            _tokenId
-        );
-
         require(
-            startTime == 0 || resulted == true,
-            "cannot place an offer if auction is going on"
+            IERC721(_nftAddress).ownerOf(_tokenId) !=
+                address(addressRegistry.auction()),
+            "NFT auction is going on"
         );
 
         require(_deadline > _getNow(), "invalid expiration");
@@ -643,9 +638,9 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 _feeRecipient
             );
         } else {
-
-                CollectionRoyalty storage collectionRoyalty
-             = collectionRoyalties[_nftAddress];
+            CollectionRoyalty storage collectionRoyalty = collectionRoyalties[
+                _nftAddress
+            ];
 
             collectionRoyalty.royalty = _royalty;
             collectionRoyalty.feeRecipient = _feeRecipient;
@@ -746,7 +741,7 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     /// Internal and Private ///
     ////////////////////////////
 
-    function _getNow() internal virtual view returns (uint256) {
+    function _getNow() internal view virtual returns (uint256) {
         return block.timestamp;
     }
 
