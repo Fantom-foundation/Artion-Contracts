@@ -34,6 +34,7 @@ const FantomAuction = artifacts.require('MockFantomAuction');
 const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
+const FantomNFTFactory = artifacts.require('FantomNFTFactory');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
@@ -41,6 +42,7 @@ contract('FantomMarketplace - Buying Test', function([
   owner,
   platformFeeRecipient,
   artist,
+  nftMinter,
   hacker,
   buyer,
   account1
@@ -51,6 +53,8 @@ contract('FantomMarketplace - Buying Test', function([
     let listing;
     let wFTMBalance;
     let nftOwner;
+    let minter;
+    let royalty;
 
     this.mockERC20 = await MockERC20.new(
       mockPayTokenName,
@@ -120,6 +124,21 @@ contract('FantomMarketplace - Buying Test', function([
       this.fantomPriceFeed.address
     );
 
+    this.fantomNFTFactory = await FantomNFTFactory.new(
+      this.fantomAuction.address,
+      this.fantomMarketplace.address,
+      this.fantomBundleMarketplace.address,
+      mintFee,
+      platformFeeRecipient,
+      platformFee
+    );
+
+    await this.fantomNFTFactory.registerTokenContract(this.mockERC721.address);
+
+    await this.fantomAddressRegistry.updateNFTFactory(
+      this.fantomNFTFactory.address
+    );
+
     await this.mockERC721.mint(artist, { from: artist });
 
     await this.mockERC721.mint(artist, { from: artist });
@@ -130,6 +149,13 @@ contract('FantomMarketplace - Buying Test', function([
       {
         from: artist
       }
+    );
+
+    await this.fantomMarketplace.registerRoyalty(
+      this.mockERC721.address,
+      ZERO,
+      new BN('100'),
+      { from: artist }
     );
 
     await this.fantomMarketplace.listItem(
@@ -243,5 +269,20 @@ contract('FantomMarketplace - Buying Test', function([
   it('The owner of the nft should be the buyer now', async function() {
     nftOwner = await this.mockERC721.ownerOf(ZERO);
     expect(nftOwner).to.be.equal(buyer);
+  });
+
+  it('It should return correct minter and royalty value [1% (100)]', async function() {
+    minter = await this.fantomMarketplace.minters(
+      this.mockERC721.address,
+      ZERO
+    );
+
+    royalty = await this.fantomMarketplace.royalties(
+      this.mockERC721.address,
+      ZERO
+    );
+
+    expect(royalty.toString()).to.be.equal('100');
+    expect(minter.toString()).to.be.equal(artist);
   });
 });
