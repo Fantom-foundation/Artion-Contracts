@@ -530,10 +530,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
         Offer memory offer = offers[_nftAddress][_tokenId][_creator];
 
-        //require(offer.deadline > _getNow(), "offer has expired");
-        //require(offer.deadline == _getNow(), "offer has expired");
-        //require(offer.deadline < _getNow(), "offer has expired");
-
         _validOwner(_nftAddress, _tokenId, _msgSender(), offer.quantity);
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
