@@ -35,11 +35,14 @@ const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomNFTFactory = artifacts.require('FantomNFTFactory');
+const FantomNFTFactoryPrivate = artifacts.require('FantomNFTFactoryPrivate');
+const FantomArtFactory = artifacts.require('FantomArtFactory');
+const FantomArtFactoryPrivate = artifacts.require('FantomArtFactoryPrivate');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
 contract(
-  'FantomMarketplace - Royalty Test',
+  'FantomMarketplace - NFT Royalty Test',
   function ([owner, platformFeeRecipient, artist, hacker, buyer, account1]) {
     before(async function () {
       this.mockERC20 = await MockERC20.new(
@@ -122,6 +125,31 @@ contract(
         platformFee
       );
 
+      this.fantomNFTFactoryPrivate = await FantomNFTFactoryPrivate.new(
+        this.fantomAuction.address,
+        this.fantomMarketplace.address,
+        this.fantomBundleMarketplace.address,
+        mintFee,
+        platformFeeRecipient,
+        platformFee
+      );
+
+      this.fantomArtFactory = await FantomArtFactory.new(
+        this.fantomMarketplace.address,
+        this.fantomBundleMarketplace.address,
+        mintFee,
+        platformFeeRecipient,
+        platformFee
+      );
+
+      this.fantomArtFactoryPrivate = await FantomArtFactoryPrivate.new(
+        this.fantomMarketplace.address,
+        this.fantomBundleMarketplace.address,
+        mintFee,
+        platformFeeRecipient,
+        platformFee
+      );
+
       await this.fantomNFTFactory.registerTokenContract(
         this.mockERC721.address
       );
@@ -130,15 +158,39 @@ contract(
         this.fantomNFTFactory.address
       );
 
+      await this.fantomAddressRegistry.updateNFTFactoryPrivate(
+        this.fantomNFTFactoryPrivate.address
+      );
+
+      await this.fantomAddressRegistry.updateArtFactory(
+        this.fantomArtFactory.address
+      );
+
+      await this.fantomAddressRegistry.updateArtFactoryPrivate(
+        this.fantomArtFactoryPrivate.address
+      );
+
       await this.mockERC721.mint(artist, { from: artist });
     });
 
-    it('An artist registers a royalty [1% (100)] for his NFT', async function () {
+    it('should register a royalty [1% (100)] for NFT', async function () {
       await this.fantomMarketplace.registerRoyalty(
         this.mockERC721.address,
         ZERO,
         new BN('100'),
         { from: artist }
+      );
+    });
+
+    it('should not register a royalty [1% (100)] for NFT if Not an owner', async function () {
+      await expectRevert(
+        this.fantomMarketplace.registerRoyalty(
+          this.mockERC721.address,
+          ZERO,
+          new BN('100'),
+          { from: buyer }
+        ),
+        'not owning item'
       );
     });
 
@@ -157,7 +209,7 @@ contract(
       expect(minter.toString()).to.be.equal(artist);
     });
 
-    it('An artist fails to register a royalty [101% (10001)] for his NFT', async function () {
+    it('should fail to register a royalty [101% (10001)] for NFT', async function () {
       await expectRevert(
         this.fantomMarketplace.registerRoyalty(
           this.mockERC721.address,
@@ -166,6 +218,37 @@ contract(
           { from: artist }
         ),
         'invalid royalty'
+      );
+    });
+
+    it('should fail to register a royalty If collection address does not exist', async function () {
+      this.mockERC721New = await MockERC721.new(
+        mockPayTokenSymbol,
+        mockPayTokenSymbol
+      );
+
+      await this.mockERC721New.mint(artist, { from: artist });
+
+      await expectRevert(
+        this.fantomMarketplace.registerRoyalty(
+          this.mockERC721New.address,
+          ZERO,
+          new BN('10000'),
+          { from: artist }
+        ),
+        'invalid nft address'
+      );
+    });
+
+    it('should fail to register a royalty for NFT if already set', async function () {
+      await expectRevert(
+        this.fantomMarketplace.registerRoyalty(
+          this.mockERC721.address,
+          ZERO,
+          new BN('10000'),
+          { from: artist }
+        ),
+        'royalty already set'
       );
     });
   }
