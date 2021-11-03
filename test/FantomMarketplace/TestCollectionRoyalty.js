@@ -255,36 +255,5 @@ contract(
         'invalid nft address'
       );
     });
-
-    // it('should fail to register a royalty If collection address does not exist', async function () {
-    //   this.mockERC721New = await MockERC721.new(
-    //     mockPayTokenSymbol,
-    //     mockPayTokenSymbol
-    //   );
-
-    //   await this.mockERC721New.mint(artist, { from: artist });
-
-    //   await expectRevert(
-    //     this.fantomMarketplace.registerRoyalty(
-    //       this.mockERC721New.address,
-    //       ZERO,
-    //       new BN('10000'),
-    //       { from: artist }
-    //     ),
-    //     'invalid nft address'
-    //   );
-    // });
-
-    // it('should fail to register a royalty for NFT if already set', async function () {
-    //   await expectRevert(
-    //     this.fantomMarketplace.registerRoyalty(
-    //       this.mockERC721.address,
-    //       ZERO,
-    //       new BN('10000'),
-    //       { from: artist }
-    //     ),
-    //     'royalty already set'
-    //   );
-    // });
   }
 );
