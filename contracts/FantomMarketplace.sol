@@ -32,20 +32,6 @@ interface IFantomAddressRegistry {
     function priceFeed() external view returns (address);
 }
 
-interface IFantomAuction {
-    function auctions(address, uint256)
-        external
-        view
-        returns (
-            address,
-            address,
-            uint256,
-            uint256,
-            uint256,
-            bool
-        );
-}
-
 interface IFantomBundleMarketplace {
     function validateItemSold(
         address,
@@ -474,16 +460,10 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             "invalid nft address"
         );
 
-        IFantomAuction auction = IFantomAuction(addressRegistry.auction());
-
-        (, , , uint256 startTime, , bool resulted) = auction.auctions(
-            _nftAddress,
-            _tokenId
-        );
-
         require(
-            startTime == 0 || resulted == true,
-            "cannot place an offer if auction is going on"
+            IERC721(_nftAddress).ownerOf(_tokenId) !=
+                address(addressRegistry.auction()),
+            "NFT auction is going on"
         );
 
         require(_deadline > _getNow(), "invalid expiration");
