@@ -288,7 +288,7 @@ contract('FantomMarketplace - Buying Test', function([
   });
 
   it(`The buyer sells the nft for 100 wFTM on the marketplace. Another buyer buys that.
-     The minter (the artist) should get 1% of 100`, async function() {
+     The minter (the artist) should get 1% of 95 and the fee recipient gets 5% of 100`, async function() {
     //Let's mock the current time: 2021-09-25-10:00:00 GMT
     await this.fantomMarketplace.setTime(new BN('1632564000'));
 
@@ -319,27 +319,6 @@ contract('FantomMarketplace - Buying Test', function([
     await this.mockERC20.approve(this.fantomMarketplace.address, ether('100'), {
       from: buyer2
     });
-
-    console.log('Before nft is sold');
-    wFTMBalance = await this.mockERC20.balanceOf(artist);
-    console.log(
-      `The balance of the royalty holder : ${wFTMBalance.toString() / 10 ** 18}`
-    );
-
-    wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
-    console.log(
-      `The balance of the fee recipient : ${wFTMBalance.toString() / 10 ** 18}`
-    );
-
-    wFTMBalance = await this.mockERC20.balanceOf(buyer);
-    console.log(
-      `The balance of the buyer : ${wFTMBalance.toString() / 10 ** 18}`
-    );
-
-    wFTMBalance = await this.mockERC20.balanceOf(buyer2);
-    console.log(
-      `The balance of the buyer2 : ${wFTMBalance.toString() / 10 ** 18}`
-    );
     //Buyer2 buys the nft
     await this.fantomMarketplace.buyItem(
       this.mockERC721.address,
@@ -349,25 +328,13 @@ contract('FantomMarketplace - Buying Test', function([
       { from: buyer2 }
     );
 
-    console.log('After nft is sold');
     wFTMBalance = await this.mockERC20.balanceOf(artist);
-    console.log(
-      `The balance of the royalty holder : ${wFTMBalance.toString() / 10 ** 18}`
-    );
+    expect(wFTMBalance.toString()).to.be.equal(ether('19.95').toString());
 
     wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
-    console.log(
-      `The balance of the fee recipient : ${wFTMBalance.toString() / 10 ** 18}`
-    );
+    expect(wFTMBalance.toString()).to.be.equal(ether('6').toString());
 
     wFTMBalance = await this.mockERC20.balanceOf(buyer);
-    console.log(
-      `The balance of the buyer : ${wFTMBalance.toString() / 10 ** 18}`
-    );
-
-    wFTMBalance = await this.mockERC20.balanceOf(buyer2);
-    console.log(
-      `The balance of the buyer2 : ${wFTMBalance.toString() / 10 ** 18}`
-    );
+    expect(wFTMBalance.toString()).to.be.equal(ether('94.05').toString());
   });
 });
