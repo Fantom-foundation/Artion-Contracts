@@ -328,9 +328,18 @@ contract('FantomMarketplace - Buying Test', function([
 
     wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
     console.log(
-      `The balance of the fee recipent : ${wFTMBalance.toString() / 10 ** 18}`
+      `The balance of the fee recipient : ${wFTMBalance.toString() / 10 ** 18}`
     );
 
+    wFTMBalance = await this.mockERC20.balanceOf(buyer);
+    console.log(
+      `The balance of the buyer : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    wFTMBalance = await this.mockERC20.balanceOf(buyer2);
+    console.log(
+      `The balance of the buyer2 : ${wFTMBalance.toString() / 10 ** 18}`
+    );
     //Buyer2 buys the nft
     await this.fantomMarketplace.buyItem(
       this.mockERC721.address,
@@ -348,7 +357,17 @@ contract('FantomMarketplace - Buying Test', function([
 
     wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
     console.log(
-      `The balance of the fee recipent : ${wFTMBalance.toString() / 10 ** 18}`
+      `The balance of the fee recipient : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    wFTMBalance = await this.mockERC20.balanceOf(buyer);
+    console.log(
+      `The balance of the buyer : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    wFTMBalance = await this.mockERC20.balanceOf(buyer2);
+    console.log(
+      `The balance of the buyer2 : ${wFTMBalance.toString() / 10 ** 18}`
     );
   });
 });

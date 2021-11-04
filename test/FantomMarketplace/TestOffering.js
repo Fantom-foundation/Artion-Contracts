@@ -44,6 +44,7 @@ contract('FantomMarketplace - Offering Test', function([
   artist,
   hacker,
   buyer,
+  buyer2,
   account1
 ]) {
   before(async function() {
@@ -430,5 +431,70 @@ contract('FantomMarketplace - Offering Test', function([
 
     expect(royalty.toString()).to.be.equal('100');
     expect(minter.toString()).to.be.equal(artist);
+  });
+
+  it(`The buyer sells the nft for 100 wFTM on the marketplace. Another buyer buys that.
+     The minter (the artist) should get 1% of 100`, async function() {
+    //Let's mock the current time: 2021-09-25-10:00:00 GMT
+    await this.fantomMarketplace.setTime(new BN('1632564000'));
+
+    await this.mockERC721.setApprovalForAll(
+      this.fantomMarketplace.address,
+      true,
+      {
+        from: buyer
+      }
+    );
+
+    await this.fantomMarketplace.listItem(
+      this.mockERC721.address,
+      ZERO,
+      ONE,
+      this.mockERC20.address,
+      ether('100'),
+      new BN('1632565800'), // 2021-09-25 10:30:00 GMT
+      { from: buyer }
+    );
+
+    //Let's mock the current time: 2021-09-25-11:00:00 GMT
+    await this.fantomMarketplace.setTime(new BN('1632567600'));
+
+    //Let's mint 100 wFTMs to the buyer2 so he/she can purchase the nft
+    await this.mockERC20.mintPay(buyer2, ether('100'));
+    //The buyer approve his/her wFTM to the marketplace
+    await this.mockERC20.approve(this.fantomMarketplace.address, ether('100'), {
+      from: buyer2
+    });
+
+    console.log('Before nft is sold');
+    wFTMBalance = await this.mockERC20.balanceOf(artist);
+    console.log(
+      `The balance of the royalty holder : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
+    console.log(
+      `The balance of the fee recipent : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    //Buyer2 buys the nft
+    await this.fantomMarketplace.buyItem(
+      this.mockERC721.address,
+      ZERO,
+      this.mockERC20.address,
+      buyer,
+      { from: buyer2 }
+    );
+
+    console.log('After nft is sold');
+    wFTMBalance = await this.mockERC20.balanceOf(artist);
+    console.log(
+      `The balance of the royalty holder : ${wFTMBalance.toString() / 10 ** 18}`
+    );
+
+    wFTMBalance = await this.mockERC20.balanceOf(platformFeeRecipient);
+    console.log(
+      `The balance of the fee recipent : ${wFTMBalance.toString() / 10 ** 18}`
+    );
   });
 });
