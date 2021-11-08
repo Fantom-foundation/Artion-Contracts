@@ -361,9 +361,6 @@ contract FantomAuction is
                 highestBid.bidder,
                 highestBid.bid
             );
-
-            // Clear up highest bid
-            delete highestBids[_nftAddress][_tokenId];
         }
 
         // assign top bidder and bid time
@@ -613,8 +610,8 @@ contract FantomAuction is
         // ensure that nothing contract-breaking can happen afterwards.
         //
         //
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, uint256(1));
+        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        //    .validateItemSold(_nftAddress, _tokenId, uint256(1));
         int256 price = 0;
         //int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
         //
