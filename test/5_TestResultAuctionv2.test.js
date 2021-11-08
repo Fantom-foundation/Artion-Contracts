@@ -228,6 +228,14 @@ contract('FantomAuction', async function () {
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
+        // Increase blockchain time with a test expect (hardhat workaround)
+        it('blockchain time increased 5000 seconds', async function () {
+            time.advanceBlock();
+            time.increaseTo(Number(await time.latest())+5000);
+            time.advanceBlock();
+            expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+        });
+
         it('`bidder` successfully withdrew bid once grace window started', async function () {
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, THREE)).to.emit(fantomauction, 'BidWithdrawn').withArgs(mockerc721.address, THREE, bidder.address, sellerReservePrice);
         });
