@@ -438,12 +438,12 @@ contract FantomAuction is
 
         // Get info on who the highest bidder is
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
-        uint256 winningBid = highestBid.bid;
+        address _winner = highestBid.bidder;
+        uint256 _winningBid = highestBid.bid;
 
         // Ensure _msgSender() is either auction winner or seller
         require(
-            _msgSender() == winner || _msgSender() == seller,
+            _msgSender() == _winner || _msgSender() == seller,
             "_msgSender() must be auction winner or seller"
         );
 
@@ -463,9 +463,9 @@ contract FantomAuction is
         require(!auction.resulted, "auction already resulted");
 
         // Ensure there is a winner
-        require(winner != address(0), "no open bids");
+        require(_winner != address(0), "no open bids");
         require(
-            winningBid >= auction.reservePrice,
+            _winningBid >= auction.reservePrice,
             "highest bid is below reservePrice"
         );
 
@@ -475,7 +475,7 @@ contract FantomAuction is
             "auction not approved"
         );
 
-        _resultAuction(_nftAddress, _tokenId);
+        _resultAuction(_nftAddress, _tokenId, _winner, _winningBid);
     }
 
     /**
@@ -486,17 +486,14 @@ contract FantomAuction is
      @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the item being auctioned
      */
-    function _resultAuction(address _nftAddress, uint256 _tokenId) internal {
+    function _resultAuction(
+        address _nftAddress, 
+        uint256 _tokenId, 
+        address _winner, 
+        uint256 _winningBid
+        ) internal {
         // Check the auction to see if it can be resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
-
-        // Store auction owner
-        address seller = auction.owner;
-
-        // Get info on who the highest bidder is
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
-        uint256 winningBid = highestBid.bid;
 
         // Result the auction
         auction.resulted = true;
@@ -506,9 +503,9 @@ contract FantomAuction is
 
         uint256 payAmount;
 
-        if (winningBid > auction.reservePrice) {
+        if (_winningBid > auction.reservePrice) {
             // Work out total above the reserve
-            uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
+            uint256 aboveReservePrice = _winningBid.sub(auction.reservePrice);
 
             // Work out platform fee from above reserve amount
             uint256 platformFeeAboveReserve = aboveReservePrice
@@ -530,9 +527,9 @@ contract FantomAuction is
             }
 
             // Send remaining to designer
-            payAmount = winningBid.sub(platformFeeAboveReserve);
+            payAmount = _winningBid.sub(platformFeeAboveReserve);
         } else {
-            payAmount = winningBid;
+            payAmount = _winningBid;
         }
 
         IFantomMarketplace marketplace = IFantomMarketplace(
@@ -593,7 +590,7 @@ contract FantomAuction is
         // Transfer the token to the winner
         IERC721(_nftAddress).safeTransferFrom(
             IERC721(_nftAddress).ownerOf(_tokenId),
-            winner,
+            _winner,
             _tokenId
         );
 
@@ -621,10 +618,10 @@ contract FantomAuction is
             _msgSender(),
             _nftAddress,
             _tokenId,
-            winner,
+            _winner,
             auction.payToken,
             price,
-            winningBid
+            _winningBid
         );
 
         // Remove auction
