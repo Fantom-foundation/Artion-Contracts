@@ -594,25 +594,9 @@ contract FantomAuction is
             _tokenId
         );
 
-        ////// (TESTING ONLY 614-617)
-        // These lines contain a few changes for testing purposes only. The current roadblock is during the unit test
-        // when resulting an auction, the following lines will call functions from both `FantomBundleMarketplace` and 
-        // `FantomMarketplace` which in turn also call functions from `FantomPriceFeed` which requires the oracle be
-        // set-up. And since the scope of v2 is to upgrade the `FantomAuction` contract. Setting that all up for
-        // a unit test environment isn't necessary when we understand the logic behind `FantomPriceFeed` is already sound.
-        // Therefore instead of setting up a mock oracle for the test environment and possibly more dependencies, the lines
-        // are commented out and replaced with a simple zero to return to the unit tests as part of the verification that
-        // the auction was successfully resulted. Sucsequent tests confirm that the auction winner successfully received
-        // their NFT, the seller received their earnings, and `FantomAuction` successfully collected fees; further tests
-        // ensure that nothing contract-breaking can happen afterwards.
-        //
-        //
-        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-        //    .validateItemSold(_nftAddress, _tokenId, uint256(1));
-        int256 price = 0;
-        //int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
-        //
-        ////// (TESTING ONLY 614-617)
+        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+            .validateItemSold(_nftAddress, _tokenId, uint256(1));
+        int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
 
         emit AuctionResulted(
             _msgSender(),
