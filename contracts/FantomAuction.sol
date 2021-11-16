@@ -682,25 +682,7 @@ contract FantomAuction is
             "highest bid is >= reservePrice"
         );
 
-        // Refund existing topBidder
-        if (topBidder != address(0)) {
-            _refundHighestBidder(_nftAddress, _tokenId, topBidder, topBid);
-
-            // Clear up highest bid
-            delete highestBids[_nftAddress][_tokenId];
-        }
-
-        // Remove auction and top bidder
-        delete auctions[_nftAddress][_tokenId];
-
-        // Transfer the item back to auctions.owner
-        IERC721(_nftAddress).safeTransferFrom(
-            IERC721(_nftAddress).ownerOf(_tokenId),
-            seller,
-            _tokenId
-        );
-
-        emit AuctionCancelled(_nftAddress, _tokenId);
+        _cancelAuction(_nftAddress, _tokenId);
     }
 
     /**
