@@ -438,12 +438,12 @@ contract FantomAuction is
 
         // Get info on who the highest bidder is
         HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
-        uint256 winningBid = highestBid.bid;
+        address _winner = highestBid.bidder;
+        uint256 _winningBid = highestBid.bid;
 
         // Ensure _msgSender() is either auction winner or seller
         require(
-            _msgSender() == winner || _msgSender() == seller,
+            _msgSender() == _winner || _msgSender() == seller,
             "_msgSender() must be auction winner or seller"
         );
 
@@ -463,9 +463,9 @@ contract FantomAuction is
         require(!auction.resulted, "auction already resulted");
 
         // Ensure there is a winner
-        require(winner != address(0), "no open bids");
+        require(_winner != address(0), "no open bids");
         require(
-            winningBid >= auction.reservePrice,
+            _winningBid >= auction.reservePrice,
             "highest bid is below reservePrice"
         );
 
@@ -475,7 +475,7 @@ contract FantomAuction is
             "auction not approved"
         );
 
-        _resultAuction(_nftAddress, _tokenId);
+        _resultAuction(_nftAddress, _tokenId, _winner, _winningBid);
     }
 
     /**
@@ -486,17 +486,14 @@ contract FantomAuction is
      @param _nftAddress ERC 721 Address
      @param _tokenId Token ID of the item being auctioned
      */
-    function _resultAuction(address _nftAddress, uint256 _tokenId) internal {
+    function _resultAuction(
+        address _nftAddress, 
+        uint256 _tokenId, 
+        address _winner, 
+        uint256 _winningBid
+        ) internal {
         // Check the auction to see if it can be resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
-
-        // Store auction owner
-        address seller = auction.owner;
-
-        // Get info on who the highest bidder is
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
-        address winner = highestBid.bidder;
-        uint256 winningBid = highestBid.bid;
 
         // Result the auction
         auction.resulted = true;
@@ -506,9 +503,9 @@ contract FantomAuction is
 
         uint256 payAmount;
 
-        if (winningBid > auction.reservePrice) {
+        if (_winningBid > auction.reservePrice) {
             // Work out total above the reserve
-            uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
+            uint256 aboveReservePrice = _winningBid.sub(auction.reservePrice);
 
             // Work out platform fee from above reserve amount
             uint256 platformFeeAboveReserve = aboveReservePrice
@@ -530,9 +527,9 @@ contract FantomAuction is
             }
 
             // Send remaining to designer
-            payAmount = winningBid.sub(platformFeeAboveReserve);
+            payAmount = _winningBid.sub(platformFeeAboveReserve);
         } else {
-            payAmount = winningBid;
+            payAmount = _winningBid;
         }
 
         IFantomMarketplace marketplace = IFantomMarketplace(
@@ -593,38 +590,22 @@ contract FantomAuction is
         // Transfer the token to the winner
         IERC721(_nftAddress).safeTransferFrom(
             IERC721(_nftAddress).ownerOf(_tokenId),
-            winner,
+            _winner,
             _tokenId
         );
 
-        ////// (TESTING ONLY 614-617)
-        // These lines contain a few changes for testing purposes only. The current roadblock is during the unit test
-        // when resulting an auction, the following lines will call functions from both `FantomBundleMarketplace` and 
-        // `FantomMarketplace` which in turn also call functions from `FantomPriceFeed` which requires the oracle be
-        // set-up. And since the scope of v2 is to upgrade the `FantomAuction` contract. Setting that all up for
-        // a unit test environment isn't necessary when we understand the logic behind `FantomPriceFeed` is already sound.
-        // Therefore instead of setting up a mock oracle for the test environment and possibly more dependencies, the lines
-        // are commented out and replaced with a simple zero to return to the unit tests as part of the verification that
-        // the auction was successfully resulted. Sucsequent tests confirm that the auction winner successfully received
-        // their NFT, the seller received their earnings, and `FantomAuction` successfully collected fees; further tests
-        // ensure that nothing contract-breaking can happen afterwards.
-        //
-        //
-        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-        //    .validateItemSold(_nftAddress, _tokenId, uint256(1));
-        int256 price = 0;
-        //int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
-        //
-        ////// (TESTING ONLY 614-617)
+        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+            .validateItemSold(_nftAddress, _tokenId, uint256(1));
+        int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
 
         emit AuctionResulted(
             _msgSender(),
             _nftAddress,
             _tokenId,
-            winner,
+            _winner,
             auction.payToken,
             price,
-            winningBid
+            _winningBid
         );
 
         // Remove auction
@@ -682,25 +663,7 @@ contract FantomAuction is
             "highest bid is >= reservePrice"
         );
 
-        // Refund existing topBidder
-        if (topBidder != address(0)) {
-            _refundHighestBidder(_nftAddress, _tokenId, topBidder, topBid);
-
-            // Clear up highest bid
-            delete highestBids[_nftAddress][_tokenId];
-        }
-
-        // Remove auction and top bidder
-        delete auctions[_nftAddress][_tokenId];
-
-        // Transfer the item back to auctions.owner
-        IERC721(_nftAddress).safeTransferFrom(
-            IERC721(_nftAddress).ownerOf(_tokenId),
-            seller,
-            _tokenId
-        );
-
-        emit AuctionCancelled(_nftAddress, _tokenId);
+        _cancelAuction(_nftAddress, _tokenId);
     }
 
     /**
