@@ -7,7 +7,7 @@ const { ethers } = require('hardhat');
 const { BigNumber } = require('ethers');
 const { callBefore } = require('./utils/before.js');
 const {
-    ZERO, ONE, THREE, FOUR,
+    ZERO, ONE, THREE, FOUR, FIVE,
     mockPayTokenName, mockPayTokenSymbol, mockPayTokenMintAmount,
     mockNFTokenName, mockNFTokenSymbol,
     sellerReservePrice, bidderBidAmountMinimum
@@ -286,6 +286,71 @@ contract('FantomAuction', async function () {
 
         it('20) cannot cancel an auction that has ended successfully and has been resulted as `other`', async function() {
             await expect(fantomauction.connect(other).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
+        });
+
+        it('21) successfully listed auction for `seller` `_tokenId(5)` after cancelling', async function() {
+            await expect(
+                fantomauction.connect(seller).createAuction(
+                    mockerc721.address,
+                    FIVE,
+                    mockerc20.address,
+                    sellerReservePrice,
+                    new BigNumber.from(Number(await time.latest())+5),
+                    false,
+                    new BigNumber.from(Number(await time.latest())+500)))
+                .to.emit(fantomauction, 'AuctionCreated')
+                .withArgs(mockerc721.address, FIVE, mockerc20.address);
+        });
+
+        // Increase blockchain time with a test expect (hardhat workaround)
+        it('blockchain time increased 50 seconds', async function () {
+            time.advanceBlock();
+            time.increaseTo(Number(await time.latest())+50);
+            time.advanceBlock();
+            expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+        });
+
+        // Increase blockchain time with a test expect (hardhat workaround)
+        it('blockchain time increased 50 seconds', async function () {
+            time.advanceBlock();
+            time.increaseTo(Number(await time.latest())+50);
+            time.advanceBlock();
+            expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+        });
+
+        it('bid successfully placed at `minBidIncrement`', async function () {
+            await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FIVE, bidderBidAmountMinimum)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FIVE, bidder.address, bidderBidAmountMinimum);
+        });
+
+        // Increase blockchain time with a test expect (hardhat workaround)
+        it('blockchain time increased 500 seconds', async function () {
+            time.advanceBlock();
+            time.increaseTo(Number(await time.latest())+500);
+            time.advanceBlock();
+            expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+        });
+
+        // Increase blockchain time with a test expect (hardhat workaround)
+        it('blockchain time increased 500 seconds', async function () {
+            time.advanceBlock();
+            time.increaseTo(Number(await time.latest())+500);
+            time.advanceBlock();
+            expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
+        });
+
+        it('22) successfully called `resultFailedAuction` for `bidder` for `_tokenId(5)`', async function() {
+            await expect(
+                fantomauction.connect(bidder).resultFailedAuction(
+                    mockerc721.address,
+                    FIVE))
+                .to.emit(fantomauction, 'AuctionCancelled')
+                .withArgs(mockerc721.address, FIVE);
+        });
+
+        it('23) `_tokenId(5)` successfully transferred back to original owner(seller.address) (auction-fix works)', async function() {
+            const result = await mockerc721.connect(seller).ownerOf(FIVE);
+
+            expect((result).toString()).to.equal(seller.address);
         });
     });
 });

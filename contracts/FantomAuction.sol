@@ -146,7 +146,7 @@ contract FantomAuction is
     mapping(address => mapping(uint256 => HighestBid)) public highestBids;
 
     /// @notice globally and across all auctions, the amount by which a bid has to increase
-    uint256 public minBidIncrement = 1;
+    uint256 public minBidIncrement = 25000000000000000000;
 
     /// @notice global bid withdrawal lock time
     uint256 public bidWithdrawalLockTime = 20 minutes;
@@ -594,9 +594,10 @@ contract FantomAuction is
             _tokenId
         );
 
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, uint256(1));
-        int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
+        //IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
+        //    .validateItemSold(_nftAddress, _tokenId, uint256(1));
+        //int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
+        int256 price = 0;
 
         emit AuctionResulted(
             _msgSender(),
