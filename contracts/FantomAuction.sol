@@ -395,7 +395,7 @@ contract FantomAuction is
         require(
             _getNow() > _endTime &&
                 (_getNow() - _endTime >= bidWithdrawalLockTime),
-            "can now withdraw before auction lock time"
+            "can not withdraw before auction lock time"
         );
 
         uint256 previousBid = highestBid.bid;
