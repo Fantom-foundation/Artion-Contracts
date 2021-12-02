@@ -663,7 +663,7 @@ contract FantomAuction is
             "highest bid is >= reservePrice"
         );
 
-        _cancelAuction(_nftAddress, _tokenId);
+        _cancelAuction(_nftAddress, _tokenId, seller);
     }
 
     /**
@@ -698,7 +698,7 @@ contract FantomAuction is
             "Highest bid is currently above reserve price"
         );
 
-        _cancelAuction(_nftAddress, _tokenId);
+        _cancelAuction(_nftAddress, _tokenId, _msgSender());
     }
 
     /**
@@ -933,7 +933,7 @@ contract FantomAuction is
         emit AuctionCreated(_nftAddress, _tokenId, _payToken);
     }
 
-    function _cancelAuction(address _nftAddress, uint256 _tokenId) private {
+    function _cancelAuction(address _nftAddress, uint256 _tokenId, address owner) private {
         // refund existing top bidder if found
         HighestBid memory highestBid = highestBids[_nftAddress][_tokenId];
         if (highestBid.bidder != address(0)) {
@@ -954,7 +954,7 @@ contract FantomAuction is
         // Transfer the NFT ownership back to _msgSender()
         IERC721(_nftAddress).safeTransferFrom(
             IERC721(_nftAddress).ownerOf(_tokenId),
-            _msgSender(),
+            owner,
             _tokenId
         );
 
