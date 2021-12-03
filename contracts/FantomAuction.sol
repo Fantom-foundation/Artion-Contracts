@@ -149,7 +149,7 @@ contract FantomAuction is
     uint256 public minBidIncrement = 1;
 
     /// @notice global bid withdrawal lock time
-    uint256 public bidWithdrawalLockTime = 20 minutes;
+    uint256 public bidWithdrawalLockTime = 12 hours;
 
     /// @notice global platform fee, assumed to always be to 1 decimal place i.e. 25 = 2.5%
     uint256 public platformFee = 25;
@@ -394,8 +394,8 @@ contract FantomAuction is
 
         require(
             _getNow() > _endTime &&
-                (_getNow() - _endTime >= 43200),
-            "can withdraw only after 12 hours (after auction ended)"
+                (_getNow() - _endTime >= bidWithdrawalLockTime),
+            "can not withdraw before auction lock time"
         );
 
         uint256 previousBid = highestBid.bid;
