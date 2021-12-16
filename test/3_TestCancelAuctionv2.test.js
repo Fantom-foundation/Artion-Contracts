@@ -1,3 +1,39 @@
+// 3_TestCancelAuctionv2.test.js tests through each line of the function individually
+// to cover the entire scope of the function. The `cancelAuction()` function is tested
+// in 8 parts using 30 steps to cover the whole scope of the function. 
+// The specific order of these steps is as follows:
+//
+// 1) Checks to ensure you cannot cancel an auction not owned by the auction contract
+// 2) Checks to ensure you cannot cancel an auction you don't own
+// 3) Checks that an auction owner can successfully cancel their auction
+// 4) Checks that an auction that has been cancelled cannot be cancelled again
+// 5) Checks that cancelled auctions transfer the NFT back to the proper owner
+// 6) Checks that an NFT owner can relist an auction after cancelling
+// 7) Places a bid on the relisted auction
+// 8) Checks that a relisted auction cannot be cancelled if you don't own it
+// 9) Checks to ensure the auction contract cannot cancel an auction
+// 10) Checks that a seller can cancel their auction after receiving a bid
+// 11) Checks that the top bidder of a cancelled auction is properly refunded
+// 12) Checks that an auction owner can relist an auction they cancelled that had bids
+// 13) Places a bid on the relisted auction
+// 14) Checks that an auction that has ended with bids below reserve price cannot be cancelled by non-owner
+// 15) Checks that an auction owner can cancel auctions that ended with bids below reserve price
+// 16) Checks that the cancelled auction NFT is transferred back to the owner
+// 17) Checks that an auction owner can relist an auction that ended with bids below reserve price
+// 18) Checks that the relisted auction has been successfully escrowed back to the auction contract
+// 19) Places a bid at the reserve price on the relisted auction
+// 20) Checks to ensure the auction owner cannot cancel auctions that recevied bids above reserve price
+// 21) Checks to ensure the auction non-owners cannot cancel auctions that recevied bids above reserve price
+// 22) Checks to ensure the auction top bidders cannot cancel auctions that recevied bids above reserve price
+// 23) Results the auction successfully by the seller
+// 24) Checks to ensure that an auction that ended successfully and has been resulted cannot be cancelled by the owner
+// 25) Checks to ensure that an auction that ended successfully and has been resulted cannot be cancelled by non-owners
+// 26) Lists a new auction by the seller
+// 27) Places a bid successfully on the new auction
+// 28) Checks to ensure that the bidder can call resultFailedAuction
+// 29) Checks to ensure that NFT is transferred back to the owner after calling resultFailedAuction
+// 30) Checks to ensure the highest bidder was properly refunded after calling resultFailedAuction
+
 // Load dependencies
 const hre = require("hardhat");
 const { solidity } = require("ethereum-waffle");
@@ -72,28 +108,19 @@ contract('FantomAuction', async function () {
 
     describe('Testing `cancelAuction()` individually', function () {
 
-        it('1) cannot cancel an auction not owned by the auction contract', async function() {
+        it('`cancelAuction()` Part 1/8 passed', async function() {
+            // 1) cannot cancel an auction not owned by the auction contract
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, 1)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('2) cannot cancel an auction you do not own', async function() {
+            // 2) cannot cancel an auction you do not own
             await expect(fantomauction.connect(other).cancelAuction(mockerc721.address, 4)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('3) test auction cancelled successfully by user `seller`', async function() {
+            // 3) test auction cancelled successfully by user `seller`
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, 4)).to.emit(fantomauction, 'AuctionCancelled').withArgs(mockerc721.address, FOUR);
-        });
-
-        it('4) cannot cancel an auction that has already been cancelled', async function() {
+            // 4) cannot cancel an auction that has already been cancelled
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, 4)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('5) cancelled auction NFT successfully transferred ownership back to `seller`', async function() {
-            const result = await mockerc721.connect(seller).ownerOf(FOUR);
-            expect((result).toString()).to.equal(seller.address);
-        });
-
-        it('6) successfully relisted auction for `seller` `_tokenId(4)` after cancelling', async function() {
+            // 5) cancelled auction NFT successfully transferred ownership back to `seller`
+            const fiveResult = await mockerc721.connect(seller).ownerOf(FOUR);
+            expect((fiveResult).toString()).to.equal(seller.address);
+            // 6) successfully relisted auction for `seller` `_tokenId(4)` after cancelling
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -108,7 +135,7 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
@@ -116,34 +143,25 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `minBidIncrement`', async function () {
+        it('`cancelAuction()` Part 2/8 passed', async function () {
+            // 7) bid successfully placed at `minBidIncrement`
             await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FOUR, bidderBidAmountMinimum)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FOUR, bidder.address, bidderBidAmountMinimum);
-        });
-
-        it('7) cannot cancel active auction that you dont own', async function() {
+            // 8) cannot cancel active auction that you dont own
             await expect(fantomauction.connect(other).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('8) auction contract cannot cancel an auction they dont own', async function() {
+            // 9) auction contract cannot cancel an auction they dont own
             await expect(fantomauction.connect(owner).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('9) successfully cancelled auction that has bids below reserve price as `seller`', async function() {
+            // 10) successfully cancelled auction that has bids below reserve price as `seller`
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, FOUR)).to.emit(fantomauction, 'AuctionCancelled').withArgs(mockerc721.address, FOUR);
-        });
-
-        it('10) `MockERC20` tokens properly refunded to bidder after cancelled auction', async function () {
+            // 11) `MockERC20` tokens properly refunded to bidder after cancelled auction
             expect(await mockerc20.connect(bidder).balanceOf(bidder.address)).to.be.bignumber.equal(mockPayTokenMintAmount);
-        });
-
-        it('11) successfully relisted auction for `seller` `_tokenId(4)` after cancelling auction with bids', async function() {
+            // 12) successfully relisted auction for `seller` `_tokenId(4)` after cancelling auction with bids
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -158,7 +176,7 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
@@ -166,19 +184,20 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `minBidIncrement`', async function () {
+        it('`cancelAuction()` Part 3/8 passed', async function () {
+            // 13) bid successfully placed at `minBidIncrement`
             await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FOUR, bidderBidAmountMinimum)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FOUR, bidder.address, bidderBidAmountMinimum);
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 250 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+250);
             time.advanceBlock();
@@ -186,29 +205,22 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 250 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+250);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('12) cannot cancel an auction that has ended with bids below reserve price as `bidder` or `winner` (must be arranged via resultFailedAuction())', async function() {
+        it('`cancelAuction()` Part 4/8 passed', async function() {
+            // 14) cannot cancel an auction that has ended with bids below reserve price as `bidder` or `winner` (must be arranged via resultFailedAuction())
             await expect(fantomauction.connect(bidder).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-
-        it('13) successfully cancelled auction that ended with bids below reserve price as `seller`', async function() {
+            // 15) successfully cancelled auction that ended with bids below reserve price as `seller`
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, FOUR)).to.emit(fantomauction, 'AuctionCancelled').withArgs(mockerc721.address, FOUR);
-        });
-
-        it('14) cancelled auction NFT successfully transferred ownership back to `seller`', async function() {
-            const result = await mockerc721.connect(seller).ownerOf(FOUR);
-            expect((result).toString()).to.equal(seller.address);
-        });
-
-        it('15) successfully relisted auction for `seller` `_tokenId(4)` after cancelling ended auction with bids', async function() {
-            time.advanceBlock();
+            // 16) cancelled auction NFT successfully transferred ownership back to `seller`
+            const fifteenResult = await mockerc721.connect(seller).ownerOf(FOUR);
+            expect((fifteenResult).toString()).to.equal(seller.address);
+            // 17) successfully relisted auction for `seller` `_tokenId(4)` after cancelling ended auction with bids
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -223,7 +235,7 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
@@ -231,24 +243,23 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('`_tokenId(4)` successfully in escrow with auction contract after relisting by `seller`', async function() {
-            const result = await mockerc721.connect(seller).ownerOf(FOUR);
-            expect((result).toString()).to.equal(fantomauction.address);
-        });
-
-        it('bid successfully placed at `sellerReservePrice` by `winner`', async function () {
+        it('`cancelAuction()` Part 5/8 passed', async function () {
+            // 18) `_tokenId(4)` successfully in escrow with auction contract after relisting by `seller`
+            const sixteenResult = await mockerc721.connect(seller).ownerOf(FOUR);
+            expect((sixteenResult).toString()).to.equal(fantomauction.address);
+            // 19) bid successfully placed at `sellerReservePrice` by `winner`
             await expect(fantomauction.connect(winner).placeBid(mockerc721.address, FOUR, sellerReservePrice)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FOUR, winner.address, sellerReservePrice);
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
@@ -256,39 +267,27 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('16) cannot cancel an auction that has ended with bids >= reserve price as `seller`', async function() {
+        it('`cancelAuction()` Part 6/8 passed', async function() {
+            // 20) cannot cancel an auction that has ended with bids >= reserve price as `seller`
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('Highest bid is currently above reserve price');
-        });
-
-        it('17) cannot cancel an auction that has ended with bids >= reserve price as `other`', async function() {
+            // 21) cannot cancel an auction that has ended with bids >= reserve price as `other`
             await expect(fantomauction.connect(other).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('18) cannot cancel an auction that has ended with bids >= reserve price as `winner`', async function() {
+            // 22) cannot cancel an auction that has ended with bids >= reserve price as `winner`
             await expect(fantomauction.connect(winner).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('test auction `_tokenId(4)` successfully resulted by `seller`', async function() {
-            time.advanceBlock();
+            // 23) test auction `_tokenId(4)` successfully resulted by `seller`
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, FOUR)).to.emit(fantomauction, 'AuctionResulted').withArgs(seller.address, mockerc721.address, FOUR, winner.address, mockerc20.address, ZERO, sellerReservePrice);
-        });
-
-        it('19) cannot cancel an auction that has ended successfully and has been resulted as `seller`', async function() {
+            // 24) cannot cancel an auction that has ended successfully and has been resulted as `seller`
             await expect(fantomauction.connect(seller).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('20) cannot cancel an auction that has ended successfully and has been resulted as `other`', async function() {
+            // 25) cannot cancel an auction that has ended successfully and has been resulted as `other`
             await expect(fantomauction.connect(other).cancelAuction(mockerc721.address, FOUR)).to.be.revertedWith('sender must be owner');
-        });
-
-        it('21) successfully listed auction for `seller` `_tokenId(5)` after cancelling', async function() {
+            // 26) successfully listed auction for `seller` `_tokenId(5)` after cancelling
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -303,7 +302,7 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
@@ -311,19 +310,20 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `minBidIncrement`', async function () {
+        it('`cancelAuction()` Part 7/8 passed', async function () {
+            // 27) bid successfully placed at `minBidIncrement`
             await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FIVE, bidderBidAmountMinimum)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FIVE, bidder.address, bidderBidAmountMinimum);
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
@@ -331,26 +331,26 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('22) successfully called `resultFailedAuction` for `bidder` for `_tokenId(5)`', async function() {
+        it('`cancelAuction()` Part 8/8 passed', async function() {
+            // 28) successfully called `resultFailedAuction` for `bidder` for `_tokenId(5)`
             await expect(
                 fantomauction.connect(bidder).resultFailedAuction(
                     mockerc721.address,
                     FIVE))
                 .to.emit(fantomauction, 'AuctionCancelled')
                 .withArgs(mockerc721.address, FIVE);
-        });
-
-        it('23) `_tokenId(5)` successfully transferred back to original owner(seller.address) (auction-fix works)', async function() {
-            const result = await mockerc721.connect(seller).ownerOf(FIVE);
-
-            expect((result).toString()).to.equal(seller.address);
+            // 29) `_tokenId(5)` successfully transferred back to original owner(seller.address)
+            const twentysevenResult = await mockerc721.connect(seller).ownerOf(FIVE);
+            expect((twentysevenResult).toString()).to.equal(seller.address);
+            // 30) highest bidder was successfully refunded their highest bid
+            expect(await mockerc20.connect(bidder).balanceOf(bidder.address)).to.be.bignumber.equal(mockPayTokenMintAmount);
         });
     });
 });

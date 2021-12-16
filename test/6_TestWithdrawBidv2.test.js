@@ -1,3 +1,15 @@
+// 6_TestWithdrawBidv2.test.js tests through each line of the function individually
+// to cover the entire scope of the function. The `withdrawBid()` function is tested
+// in 4 parts using 6 steps to cover the whole scope of the function. 
+// The specific order of these steps is as follows:
+//
+// 1) Places a bid on test auction at sellerReservePrice
+// 2) Checks to ensure you cannot withdraw bid if you're not currently the highest bidder
+// 3) Checks to ensure the bidder cannot withdraw their bid before the auction ends
+// 4) Checks to ensure the bidder cannot withdraw their bid immediately before the auction ends
+// 5) Checks to ensure the bidder cannot withdraw their bid immediately before the withdraw grace window
+// 6) Checks to ensure the bidder can withdraw their bid once the grace window has started
+
 // Load dependencies
 const hre = require("hardhat");
 const { solidity } = require("ethereum-waffle");
@@ -73,51 +85,50 @@ contract('FantomAuction', async function () {
     describe('Testing `withdrawBid()` individually', function () {
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 10 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+10);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `sellerReservePrice` by `bidder`', async function () {
+        it('`withdrawBid()` Part 1/4 passed', async function () {
+            // 1) bid successfully placed at `sellerReservePrice` by `bidder`
             await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, TWO, sellerReservePrice)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, TWO, bidder.address, sellerReservePrice);
-        });
-
-        it('1) cannot withdraw a bid if youre not the current highest bidder', async function () {
+            // 2) cannot withdraw a bid if youre not the current highest bidder
             await expect(fantomauction.connect(hacker).withdrawBid(mockerc721.address, TWO)).to.be.revertedWith('you are not the highest bidder');
-        });
-
-        it('2) `bidder` cannot withdraw a bid before auction ends', async function () {
+            // 3) `bidder` cannot withdraw a bid before auction ends
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, TWO)).to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 604250 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+604750);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('3) `bidder` cannot withdraw a bid immediately before auction ends', async function () {
+        it('`withdrawBid()` Part 2/4 passed', async function () {
+            // 4) `bidder` cannot withdraw a bid immediately before auction ends
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, TWO)).to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 43200 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+43200);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('4) `bidder` cannot withdraw a bid immediately before grace window', async function () {
+        it('`withdrawBid()` Part 3/4 passed', async function () {
+            // 5) `bidder` cannot withdraw a bid immediately before grace window
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, TWO)).to.be.revertedWith('can withdraw only after 12 hours (after auction ended)');
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
@@ -125,14 +136,15 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('5) `bidder` successfully withdrew bid once grace window started', async function () {
+        it('`withdrawBid()` Part 4/4 passed', async function () {
+            // 6) `bidder` successfully withdrew bid once grace window started
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, TWO)).to.emit(fantomauction, 'BidWithdrawn').withArgs(mockerc721.address, TWO, bidder.address, sellerReservePrice);
         });
     });

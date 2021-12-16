@@ -1,3 +1,22 @@
+// 2_TestCreateAuctionv2.test.js tests through each line of the function individually
+// to cover the entire scope of the function. The `createAuction()` function is tested
+// in a single scenario using 13 steps to cover the whole scope of the function. 
+// The specific order of these steps is as follows:
+//
+// 1) Creates a test auction successfully
+// 2) Checks that the NFT is transferred in escrow to the auction contract
+// 3) Checks that the owner of the auction matches with the seller
+// 4) Checks that the payToken matches the payToken that's set for the auction
+// 5) Checks that the reserve price was properly set to what the seller input
+// 6) Checks that the auction isn't resulted by default
+// 7) Checks the minimum bid for the auction
+// 8) Checks that the NFT that was listed cannot be relisted while currently listed
+// 9) Checks to ensure that non-owners cannot list NFT's they don't own
+// 10) Checks to ensure that the endTimestamp of the auction cannot be zero
+// 11) Checks to ensure that the endTimestamp of the auction cannot be one
+// 12) Checks to ensure that the endTimestamp be greater than the startTimestamp
+// 13) Checks to ensure that the endTimestamp is at least 5 minutes past the startTimestamp
+
 // Load dependencies
 const hre = require("hardhat");
 const { solidity } = require("ethereum-waffle");
@@ -60,8 +79,13 @@ contract('FantomAuction', async function () {
         fantomauction.connect(owner).hardhatTimestamp(timeNow);
     });
 
-    describe('Testing `createAuction()` individually', function () {
-        it('1) test auction created successfully for user `seller`', async function() {
+    describe('Testing `createAuction()`', function () {
+        it('', async function() {
+            
+        });
+
+        it('`createAuction()` passes all scenarios', async function() {
+            // 1) test auction created successfully for user `seller`
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -73,45 +97,22 @@ contract('FantomAuction', async function () {
                     new BigNumber.from(Number(await time.latest())+305)))
                 .to.emit(fantomauction, 'AuctionCreated')
                 .withArgs(mockerc721.address, FOUR, mockerc20.address);
-        });
-
-        it('2) NFT successfully in escrow with auction contract', async function() {
-            const result = await mockerc721.connect(seller).ownerOf(FOUR);
-
-            expect((result).toString()).to.equal(fantomauction.address);
-        });
-
-        it('3) created auction `seller` is `_owner`', async function() {
-            const result = await fantomauction.connect(seller).getAuction(mockerc721.address, FOUR);
-            const {0: _owner} = result;
+            const result = await fantomauction.connect(owner).getAuction(mockerc721.address, FOUR);
+            const ownerResult = await mockerc721.connect(seller).ownerOf(FOUR);
+            const {0: _owner, 1: _payToken, 2: _reservePrice, 5: _resulted, 6: _minBid} = result;
+            // 2) NFT successfully in escrow with auction contract
+            expect((ownerResult).toString()).to.equal(fantomauction.address);
+            // 3) created auction `seller` is `_owner`
             expect((_owner).toString()).to.equal(seller.address);
-        });
-
-        it('4) created auction `_payToken` is `MockERC20`', async function() {
-            const result = await fantomauction.connect(owner).getAuction(mockerc721.address, FOUR);
-            const {1: _payToken} = result;
+            // 4) created auction `_payToken` is `MockERC20`
             expect((_payToken).toString()).to.equal(mockerc20.address);
-        });
-
-        it('5) created auction `_reservePrice` is `sellerReservePrice`', async function() {
-            const result = await fantomauction.connect(owner).getAuction(mockerc721.address, FOUR);
-            const {2: _reservePrice} = result;
+            // 5) created auction `_reservePrice` is `sellerReservePrice`
             expect((_reservePrice).toString()).to.equal(sellerReservePrice.toString());
-        });
-
-        it('6) created auction `_resulted` is `false`', async function() {
-            const result = await fantomauction.connect(owner).getAuction(mockerc721.address, FOUR);
-            const {5: _resulted} = result;
+            // 6) created auction `_resulted` is `false`
             assert.isFalse(_resulted);
-        });
-
-        it('7) created auction `_minBid` is `0`', async function() {
-            const result = await fantomauction.connect(owner).getAuction(mockerc721.address, FOUR);
-            const {6: _minBid} = result;
+            // 7) created auction `_minBid` is `0`
             expect((_minBid).toString()).to.equal("0");
-        });
-
-        it('8) `seller` cannot relist the same NFT while active auction exists', async function() {
+            // 8) `seller` cannot relist the same NFT while active auction exists
             await expect(fantomauction.connect(seller).createAuction(
                 mockerc721.address,
                 FOUR,
@@ -121,9 +122,7 @@ contract('FantomAuction', async function () {
                 false,
                 new BigNumber.from(Number(await time.latest())+305)))
             .to.be.revertedWith('not owner and or contract not approved');
-        });
-
-        it('9) cannot list auction if not owner of NFT', async function() {
+            // 9) cannot list auction if not owner of NFT
             await expect(fantomauction.connect(other).createAuction(
                 mockerc721.address,
                 THREE,
@@ -133,9 +132,7 @@ contract('FantomAuction', async function () {
                 false,
                 new BigNumber.from(Number(await time.latest())+305)))
             .to.be.revertedWith('not owner and or contract not approved');
-        });
-
-        it('10) `createAuction()` `_endTimestamp` cannot be `0`', async function() {
+            // 10) `createAuction()` `_endTimestamp` cannot be `0`
             await expect(fantomauction.connect(seller).createAuction(
                 mockerc721.address,
                 3,
@@ -145,9 +142,7 @@ contract('FantomAuction', async function () {
                 false,
                 0))
             .to.be.revertedWith('end time must be greater than start (by 5 minutes)');
-        });
-
-        it('11) `createAuction()` `_endTimestamp` cannot be `1`', async function() {
+            // 11) `createAuction()` `_endTimestamp` cannot be `1`
             await expect(fantomauction.connect(seller).createAuction(
                 mockerc721.address,
                 3,
@@ -157,9 +152,7 @@ contract('FantomAuction', async function () {
                 false,
                 1))
             .to.be.revertedWith('end time must be greater than start (by 5 minutes)');
-        });
-
-        it('12) `_endTimestamp` cannot be less than `_startTimestamp`', async function() {
+            // 12) `_endTimestamp` cannot be less than `_startTimestamp`
             await expect(fantomauction.connect(seller).createAuction(
                 mockerc721.address,
                 3,
@@ -169,9 +162,7 @@ contract('FantomAuction', async function () {
                 false,
                 new BigNumber.from(Number(await time.latest())+299)))
             .to.be.revertedWith('end time must be greater than start (by 5 minutes)');
-        });
-
-        it('13) `_endTimestamp` must be greater than 5 minutes past `_startTimestamp`', async function() {
+            // 13) `_endTimestamp` must be greater than 5 minutes past `_startTimestamp`
             await expect(fantomauction.connect(seller).createAuction(
                 mockerc721.address,
                 3,

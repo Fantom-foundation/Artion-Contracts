@@ -315,7 +315,7 @@ contract('FantomAuction', async function () {
             
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 100 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+100);
                 time.advanceBlock();
@@ -323,7 +323,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 100 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+100);
                 time.advanceBlock();
@@ -449,7 +449,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -457,7 +457,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -568,7 +568,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -576,7 +576,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -667,7 +667,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -675,7 +675,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -712,7 +712,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -720,7 +720,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -947,7 +947,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -955,7 +955,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 50 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+50);
                 time.advanceBlock();
@@ -992,7 +992,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -1000,7 +1000,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -1083,7 +1083,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 500 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+500);
                 time.advanceBlock();
@@ -1159,7 +1159,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 604250 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+604250);
                 time.advanceBlock();
@@ -1175,7 +1175,7 @@ contract('FantomAuction', async function () {
             });
 
             // Increase blockchain time with a test expect (hardhat workaround)
-            it('blockchain time increased 43000 seconds', async function () {
+            it('', async function () {
                 time.advanceBlock();
                 time.increaseTo(Number(await time.latest())+43000);
                 time.advanceBlock();

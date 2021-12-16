@@ -1,3 +1,25 @@
+// 5_TestResultAuctionv2.test.js tests through each line of the function individually
+// to cover the entire scope of the function. The `resultAuction()` function is tested
+// in 6 parts using 16 steps to cover the whole scope of the function. 
+// The specific order of these steps is as follows:
+//
+// 1) Places a bid below reserve price on test auction
+// 2) Checks to ensure an auction that hasn't ended cannot be resulted by the owner
+// 3) Checks to ensure an auction that hasn't ended cannot be resulted by non-owners
+// 4) Checks to ensure an auction that ended with bids below reserve cannot be resulted by the owner
+// 5) Checks to ensure an auction that ended with bids below reserve cannot be resulted by non-owners
+// 6) Lists another test auction by the seller
+// 7) Places a bid successfully at the sellerReservePrice on the new auction
+// 8) Checks to ensure an auction that ended with bids above reserve price cannot be resulted by non-owner/non-winner
+// 9) Checks that auctions that ended with bids above reserve price can be resulted
+// 10) Checks to ensure auctions that have already been resulted cannot be resulted again by the seller
+// 11) Checks to ensure auctions that have already been resulted cannot be resulted again by non-owner/non-winner
+// 12) Checks to ensure auctions that have already been resulted cannot be resulted again by the winner
+// 13) Lists another test auction by the seller
+// 14) Places a bid successfully at the sellerReservePrice on the new auction
+// 15) Withdraws the bid by the bidder before the grace window ended
+// 16) Checks to ensure that auctions that ended and had the bidder withdraw their bid cannot then be resulted
+
 // Load dependencies
 const hre = require("hardhat");
 const { solidity } = require("ethereum-waffle");
@@ -71,36 +93,34 @@ contract('FantomAuction', async function () {
     });
 
     describe('Testing `resultAuction()` individually', function () {
+
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('`bidder` placed bid below reserve', async function () {
-            const bidAttempt = new BigNumber.from("75000000000000000000");
-            await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FOUR, bidAttempt)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FOUR, bidder.address, bidAttempt);
-        });
-        
-        it('1) cannot result an auction that hasnt ended as `seller`', async function() {
+        it('`resultAuction()` Part 1/6 passed', async function() {
+            // 1) `bidder` placed bid below reserve
+            const bidAttemptOne = new BigNumber.from("75000000000000000000");
+            await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, FOUR, bidAttemptOne)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, FOUR, bidder.address, bidAttemptOne);
+            // 2) cannot result an auction that hasnt ended as `seller`
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, FOUR)).to.be.revertedWith('auction not ended');
-        });
-
-        it('2) cannot result an auction that hasnt ended as `other`', async function() {
+            // 3) cannot result an auction that hasnt ended as `other`
             await expect(fantomauction.connect(other).resultAuction(mockerc721.address, FOUR)).to.be.revertedWith('_msgSender() must be auction winner or seller');
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
@@ -108,23 +128,19 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('3) cannot result a finished auction that ended with bids below the reserve price', async function() {
+        it('`resultAuction()` Part 2/6 passed', async function() {
+            // 4) cannot result a finished auction that ended with bids below the reserve price
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, FOUR)).to.be.revertedWith('highest bid is below reservePrice');
-        });
-
-        it('4) cannot result a finished auction that ended with bids below the reserve price as non-owner', async function() {
+            // 5) cannot result a finished auction that ended with bids below the reserve price as non-owner
             await expect(fantomauction.connect(hacker).resultAuction(mockerc721.address, FOUR)).to.be.revertedWith('_msgSender() must be auction winner or seller');
-        });
-
-        it('successfully listed auction for `seller` `_tokenId(2)`', async function() {
-            time.advanceBlock();
+            // 6) successfully listed auction for `seller` `_tokenId(2)`
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -139,7 +155,7 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
@@ -147,19 +163,20 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 50 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+50);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `sellerReservePrice` by `winner`', async function () {
+        it('`resultAuction()` Part 3/6 passed', async function () {
+            // 7) bid successfully placed at `sellerReservePrice` by `winner`
             await expect(fantomauction.connect(winner).placeBid(mockerc721.address, TWO, sellerReservePrice)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, TWO, winner.address, sellerReservePrice);
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
@@ -167,34 +184,25 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('5) cannot result a successful auction as `other`', async function() {
+        it('`resultAuction()` Part 4/6 passed', async function () {
+            // 8) cannot result a successful auction as `other`
             await expect(fantomauction.connect(other).resultAuction(mockerc721.address, TWO)).to.be.revertedWith('_msgSender() must be auction winner or seller');
-        });
-
-        it('6) test auction `_tokenId(4)` successfully resulted by `seller`', async function() {
+            // 9) test auction `_tokenId(4)` successfully resulted by `seller`
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, TWO)).to.emit(fantomauction, 'AuctionResulted').withArgs(seller.address, mockerc721.address, TWO, winner.address, mockerc20.address, ZERO, sellerReservePrice);
-        });
-
-        it('7) cannot result an auction that has already been resulted as `seller`', async function() {
+            // 10) cannot result an auction that has already been resulted as `seller`
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, TWO)).to.be.revertedWith('_msgSender() must be auction winner or seller');
-        });
-
-        it('8) cannot result an auction that has already been resulted as `other`', async function() {
+            // 11) cannot result an auction that has already been resulted as `other`
             await expect(fantomauction.connect(other).resultAuction(mockerc721.address, TWO)).to.be.revertedWith('_msgSender() must be auction winner or seller');
-        });
-
-        it('9) cannot result an auction that has already been resulted as `winner`', async function() {
+            // 12) cannot result an auction that has already been resulted as `winner`
             await expect(fantomauction.connect(winner).resultAuction(mockerc721.address, TWO)).to.be.revertedWith('_msgSender() must be auction winner or seller');
-        });
-
-        it('successfully listed auction for `seller` `_tokenId(3)`', async function () {
+            // 13) successfully listed auction for `seller` `_tokenId(3)`
             await expect(
                 fantomauction.connect(seller).createAuction(
                     mockerc721.address,
@@ -209,19 +217,20 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 500 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+500);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('bid successfully placed at `sellerReservePrice` by `bidder`', async function () {
+        it('`resultAuction()` Part 5/6 passed', async function () {
+            // 14) bid successfully placed at `sellerReservePrice` by `bidder`
             await expect(fantomauction.connect(bidder).placeBid(mockerc721.address, THREE, sellerReservePrice)).to.emit(fantomauction, 'BidPlaced').withArgs(mockerc721.address, THREE, bidder.address, sellerReservePrice);
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 650000 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+650000);
             time.advanceBlock();
@@ -229,18 +238,17 @@ contract('FantomAuction', async function () {
         });
 
         // Increase blockchain time with a test expect (hardhat workaround)
-        it('blockchain time increased 5000 seconds', async function () {
+        it('', async function () {
             time.advanceBlock();
             time.increaseTo(Number(await time.latest())+5000);
             time.advanceBlock();
             expect((await fantomauction.connect(owner).owner()).toString()).to.equal(owner.address);
         });
 
-        it('`bidder` successfully withdrew bid once grace window started', async function () {
+        it('`resultAuction()` Part 6/6 passed', async function() {
+            // 15) `bidder` successfully withdrew bid once grace window started
             await expect(fantomauction.connect(bidder).withdrawBid(mockerc721.address, THREE)).to.emit(fantomauction, 'BidWithdrawn').withArgs(mockerc721.address, THREE, bidder.address, sellerReservePrice);
-        });
-
-        it('10) cannot result an auction that ended and had the highest bidder withdraw', async function() {
+            // 16) cannot result an auction that ended and had the highest bidder withdraw
             await expect(fantomauction.connect(seller).resultAuction(mockerc721.address, THREE)).to.be.revertedWith('no open bids');
         });
     });
