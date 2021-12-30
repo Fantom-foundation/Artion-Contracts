@@ -34,8 +34,6 @@ contract FantomRoyaltyRegistry is Ownable {
         address _receiver,
         uint16 _royaltyPercent
     ) external onlyOwner {
-        require(_royaltyPercent <= 10000, "royalty too high");
-
         _setRoyalty(_collection, 0, _receiver, _royaltyPercent);
     }
 
@@ -45,11 +43,6 @@ contract FantomRoyaltyRegistry is Ownable {
         address _receiver,
         uint16 _royaltyPercent
     ) external auth(_collection, _tokenId) {
-        RoyaltyInfo memory royalty = _royalties[_collection][_tokenId];
-
-        require(royalty.royaltyPercent == 0, "NFT royalty already set");
-        require(_royaltyPercent <= 10000, "royalty too high");
-
         _setRoyalty(_collection, _tokenId, _receiver, _royaltyPercent);
     }
 
@@ -76,6 +69,11 @@ contract FantomRoyaltyRegistry is Ownable {
         address _receiver,
         uint16 _royaltyPercent
     ) internal {
+        RoyaltyInfo memory royalty = _royalties[_collection][_tokenId];
+
+        require(royalty.royaltyPercent == 0, "Royalty already set");
+        require(_royaltyPercent <= 10000, "Royalty too high");
+
         _royalties[_collection][_tokenId] = RoyaltyInfo(
             _receiver,
             _royaltyPercent
@@ -93,11 +91,18 @@ contract FantomRoyaltyRegistry is Ownable {
             _receiver = royalty.receiver;
             _royaltyAmount = (_salePrice * royalty.royaltyPercent) / 10000;
         } else {
-            // Fallback version settings come here
-            
-            _receiver = address(0);
-            _royaltyAmount = 0;
+            royalty = _royalties[_collection][0]; // use collection-wide royalty
+
+            if (royalty.receiver != address(0) && royalty.royaltyPercent != 0) {
+                _receiver = royalty.receiver;
+                _royaltyAmount = (_salePrice * royalty.royaltyPercent) / 10000;
+            } else {
+                _receiver = address(0);
+                _royaltyAmount = 0;
+            }
         }
+
+        return (_receiver, _royaltyAmount);
     }
 
     /**
