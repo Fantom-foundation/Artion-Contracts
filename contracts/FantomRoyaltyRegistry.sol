@@ -7,20 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./library/IERC2981Royalties.sol";
 
-interface IFantomMarketplace {
-    function collectionRoyalties(address)
-        external
-        view
-        returns (
-            uint16,
-            address,
-            address
-        );
-}
-
 contract FantomRoyaltyRegistry is Ownable {
     address public royaltyMigrationManager;
-    address public marketplaceOld;
 
     struct RoyaltyInfo {
         address receiver;
