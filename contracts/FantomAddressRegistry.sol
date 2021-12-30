@@ -38,6 +38,9 @@ contract FantomAddressRegistry is Ownable {
     /// @notice FantomPriceFeed contract
     address public priceFeed;
 
+    /// @notice FantomRoyaltyRegistry contract
+    address public royaltyRegistry;
+
     /**
      @notice Update artion contract
      @dev Only admin
@@ -129,5 +132,13 @@ contract FantomAddressRegistry is Ownable {
      */
     function updatePriceFeed(address _priceFeed) external onlyOwner {
         priceFeed = _priceFeed;
+    }
+
+    /**
+     @notice Update royalty registry contract
+     @dev Only admin
+     */
+    function updateRoyaltyRegistry(address _royaltyRegistry) external onlyOwner {
+        royaltyRegistry = _royaltyRegistry;
     }
 }
