@@ -9,18 +9,12 @@ const {
   TWO,
   mockPayTokenName,
   mockPayTokenSymbol,
-  mockPayTokenMintAmount,
-  mockNFTokenName,
-  mockNFTokenSymbol,
   etherToWei,
   weiToEther
 } = require('./utils/index.js');
 
-const {
-  platformFee,
-  marketPlatformFee,
-  mintFee
-} = require('./utils/marketplace');
+const _INTERFACE_ID_ROYALTIES_EIP2981 = '0x2a55205a';
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
@@ -28,6 +22,10 @@ const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomRoyaltyRegistry = artifacts.require('FantomRoyaltyRegistry');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
+const ERC721WithRoyalties = artifacts.require('ERC721WithRoyalties');
+const ERC721WithContractWideRoyalties = artifacts.require(
+  'ERC721WithContractWideRoyalties'
+);
 
 contract(
   'FantomRoyaltyRegistry',
@@ -47,6 +45,7 @@ contract(
       );
 
       this.mockCollectionTwo = await MockERC721.new('xFTM', 'xFTM');
+      this.mockCollectionThree = await MockERC721.new('zFTM', 'zFTM');
 
       this.fantomRoyaltyRegistry = await FantomRoyaltyRegistry.new();
       this.fantomRoyaltyRegistry.updateMigrationManager(
@@ -72,6 +71,16 @@ contract(
       await this.fantomAddressRegistry.updateRoyaltyRegistry(
         this.fantomRoyaltyRegistry.address
       );
+
+      // Collection with individual NFT royalties
+      this.erc721WithRoyalties = await ERC721WithRoyalties.new(
+        'firstCollection',
+        'f2981'
+      );
+
+      // Collection with single royalty
+      this.ercWithContractWideRoyalties =
+        await ERC721WithContractWideRoyalties.new('secondCollection', 's2981');
     });
 
     describe('Collection royalty', function () {
@@ -95,6 +104,19 @@ contract(
 
         expect(_receiver.toString()).to.be.equal(receiver);
         expect(weiToEther(_royaltyAmount)).to.be.equal('0.05');
+      });
+
+      it('It should return empty receiver address and zero amount [if not found]', async function () {
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.mockCollectionThree.address,
+          ONE,
+          etherToWei(1)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(ZERO_ADDRESS);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('0');
       });
 
       it('It should not allow to re-register a collection royalty', async function () {
@@ -136,6 +158,19 @@ contract(
           new BN('300'),
           { from: receiver }
         );
+      });
+
+      it('It should return correct royalty details', async function () {
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.mockCollectionTwo.address,
+          ZERO,
+          etherToWei(1)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(receiver);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('0.03');
       });
 
       it('It should not allow to re-register NFT royalty', async function () {
@@ -185,6 +220,67 @@ contract(
           new BN('300'),
           { from: royaltyMigrationManager }
         );
+      });
+    });
+
+    describe('Mock IERC2981 -- Individual Royalty', function () {
+      before(async function () {
+        await this.erc721WithRoyalties.mint(
+          receiver,
+          receiver,
+          250 // 2.5% royalty
+        );
+      });
+
+      it('It should support IERC2981', async function () {
+        expect(
+          await this.erc721WithRoyalties.supportsInterface(
+            _INTERFACE_ID_ROYALTIES_EIP2981
+          ),
+          'Error Royalties 2981'
+        ).to.be.true;
+      });
+
+      it('RoyaltyRegistry should return correct details for IERC2981 Supported collection', async function () {
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.erc721WithRoyalties.address,
+          ZERO,
+          etherToWei(10000)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(receiver);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('250'); //2.5% of 10000
+      });
+    });
+
+    describe('Mock IERC2981 -- Collection-wide Royalty', function () {
+      before(async function () {
+        await this.ercWithContractWideRoyalties.setRoyalties(receiver, 350); //3.5% royalty
+        await this.ercWithContractWideRoyalties.mint(receiver);
+      });
+
+      it('It should support IERC2981', async function () {
+        expect(
+          await this.ercWithContractWideRoyalties.supportsInterface(
+            _INTERFACE_ID_ROYALTIES_EIP2981
+          ),
+          'Error Royalties 2981'
+        ).to.be.true;
+      });
+
+      it('RoyaltyRegistry should return correct details for IERC2981 Supported collection', async function () {
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.ercWithContractWideRoyalties.address,
+          ZERO, //this argument won't be used
+          etherToWei(11000)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(receiver);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('385'); //3.5% of 11000
       });
     });
   }
