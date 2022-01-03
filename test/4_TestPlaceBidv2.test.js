@@ -26,6 +26,7 @@ contract('FantomAuction', async function () {
         FantomBundleMarketplace = await ethers.getContractFactory('FantomBundleMarketplace');
         FantomAddressRegistry = await ethers.getContractFactory('FantomAddressRegistry');
         FantomTokenRegistry = await ethers.getContractFactory('FantomTokenRegistry');
+        FantomRoyaltyRegistry = await ethers.getContractFactory('FantomRoyaltyRegistry');
 
         // Get all users in the unit test
         [owner, bidder, seller, winner, hacker, other] = await ethers.getSigners();
@@ -46,6 +47,8 @@ contract('FantomAuction', async function () {
         fantomaddressregistry = await FantomAddressRegistry.deploy();
         await fantomaddressregistry.deployed();
         fantomtokenregistry = await FantomTokenRegistry.deploy();
+        await fantomtokenregistry.deployed();
+        fantomRoyaltyRegistry = await FantomRoyaltyRegistry.deploy();
         await fantomtokenregistry.deployed();
 
         // Call function `callBefore()` in `./utils/before.js` to establish testing environment
