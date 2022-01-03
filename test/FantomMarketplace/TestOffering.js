@@ -19,7 +19,8 @@ const {
   mockPayTokenSymbol,
   mockPayTokenMintAmount,
   mockNFTokenName,
-  mockNFTokenSymbol
+  mockNFTokenSymbol,
+  weiToEther
 } = require('../utils/index.js');
 
 const {
@@ -35,6 +36,7 @@ const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomNFTFactory = artifacts.require('FantomNFTFactory');
+const FantomRoyaltyRegistry = artifacts.require('FantomRoyaltyRegistry');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
@@ -45,7 +47,7 @@ contract('FantomMarketplace - Offering Test', function([
   hacker,
   buyer,
   buyer2,
-  account1
+  royaltyMigrationManager
 ]) {
   before(async function() {
     let result;
@@ -101,6 +103,11 @@ contract('FantomMarketplace - Offering Test', function([
     this.fantomTokenRegistry = await FantomTokenRegistry.new();
     this.fantomTokenRegistry.add(this.mockERC20.address);
 
+    this.fantomRoyaltyRegistry = await FantomRoyaltyRegistry.new();
+    this.fantomRoyaltyRegistry.updateMigrationManager(
+        royaltyMigrationManager
+    );
+
     await this.fantomAddressRegistry.updateTokenRegistry(
       this.fantomTokenRegistry.address
     );
@@ -118,6 +125,10 @@ contract('FantomMarketplace - Offering Test', function([
     );
 
     await this.fantomAddressRegistry.updateAuction(this.fantomAuction.address);
+
+    await this.fantomAddressRegistry.updateRoyaltyRegistry(
+      this.fantomRoyaltyRegistry.address
+    );
 
     await this.fantomAddressRegistry.updatePriceFeed(
       this.fantomPriceFeed.address
@@ -150,9 +161,10 @@ contract('FantomMarketplace - Offering Test', function([
       }
     );
 
-    await this.fantomMarketplace.registerRoyalty(
+    await this.fantomRoyaltyRegistry.setRoyalty(
       this.mockERC721.address,
       ZERO,
+      artist,
       new BN('100'),
       { from: artist }
     );
@@ -419,18 +431,12 @@ contract('FantomMarketplace - Offering Test', function([
   });
 
   it('It should return correct minter and royalty value [1% (100)]', async function() {
-    minter = await this.fantomMarketplace.minters(
-      this.mockERC721.address,
-      ZERO
-    );
-
-    royalty = await this.fantomMarketplace.royalties(
-      this.mockERC721.address,
-      ZERO
-    );
-
-    expect(royalty.toString()).to.be.equal('100');
+    let details = await this.fantomRoyaltyRegistry.royaltyInfo(this.mockERC721.address, ZERO, ether('20'))
+    
+    const { 0: minter, 1: royalty } = details;
+    
     expect(minter.toString()).to.be.equal(artist);
+    expect(weiToEther(royalty)).to.be.equal('0.2');
   });
 
   it(`The buyer sells the nft for 100 wFTM on the marketplace. Another buyer buys that.

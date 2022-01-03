@@ -19,7 +19,8 @@ const {
   mockPayTokenSymbol,
   mockPayTokenMintAmount,
   mockNFTokenName,
-  mockNFTokenSymbol
+  mockNFTokenSymbol,
+  weiToEther
 } = require('../utils/index.js');
 
 const {
@@ -35,6 +36,7 @@ const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
 const FantomNFTFactory = artifacts.require('FantomNFTFactory');
+const FantomRoyaltyRegistry = artifacts.require('FantomRoyaltyRegistry');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
@@ -46,7 +48,7 @@ contract('FantomMarketplace - Buying Test', function([
   hacker,
   buyer,
   buyer2,
-  account1
+  royaltyMigrationManager
 ]) {
   before(async function() {
     let result;
@@ -103,6 +105,11 @@ contract('FantomMarketplace - Buying Test', function([
     this.fantomTokenRegistry = await FantomTokenRegistry.new();
     this.fantomTokenRegistry.add(this.mockERC20.address);
 
+    this.fantomRoyaltyRegistry = await FantomRoyaltyRegistry.new();
+    this.fantomRoyaltyRegistry.updateMigrationManager(
+        royaltyMigrationManager
+    );
+
     await this.fantomAddressRegistry.updateTokenRegistry(
       this.fantomTokenRegistry.address
     );
@@ -123,6 +130,10 @@ contract('FantomMarketplace - Buying Test', function([
 
     await this.fantomAddressRegistry.updatePriceFeed(
       this.fantomPriceFeed.address
+    );
+
+    await this.fantomAddressRegistry.updateRoyaltyRegistry(
+      this.fantomRoyaltyRegistry.address
     );
 
     this.fantomNFTFactory = await FantomNFTFactory.new(
@@ -152,9 +163,10 @@ contract('FantomMarketplace - Buying Test', function([
       }
     );
 
-    await this.fantomMarketplace.registerRoyalty(
+    await this.fantomRoyaltyRegistry.setRoyalty(
       this.mockERC721.address,
       ZERO,
+      artist,
       new BN('100'),
       { from: artist }
     );
@@ -272,18 +284,12 @@ contract('FantomMarketplace - Buying Test', function([
     expect(nftOwner).to.be.equal(buyer);
   });
 
-  it('It should return correct minter and royalty value [1% (100)]', async function() {
-    minter = await this.fantomMarketplace.minters(
-      this.mockERC721.address,
-      ZERO
-    );
+  it('It should return correct minter and royalty fee [1% of 20]', async function() {
+    let details = await this.fantomRoyaltyRegistry.royaltyInfo(this.mockERC721.address, ZERO, ether('20'))
 
-    royalty = await this.fantomMarketplace.royalties(
-      this.mockERC721.address,
-      ZERO
-    );
+    const { 0: minter, 1: royalty } = details;
 
-    expect(royalty.toString()).to.be.equal('100');
+    expect(weiToEther(royalty)).to.be.equal('0.2');
     expect(minter.toString()).to.be.equal(artist);
   });
 
