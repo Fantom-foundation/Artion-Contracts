@@ -509,13 +509,8 @@ contract FantomAuction is
                 .mul(platformFee)
                 .div(1000);
 
-            if (auction.payToken == address(0)) {
+            if (auction.payToken != address(0)) {
                 // Send platform fee
-                (bool platformTransferSuccess, ) = platformFeeRecipient.call{
-                    value: platformFeeAboveReserve
-                }("");
-                require(platformTransferSuccess, "failed to send platform fee");
-            } else {
                 IERC20 payToken = IERC20(auction.payToken);
                 payToken.safeTransfer(
                     platformFeeRecipient,
@@ -539,15 +534,7 @@ contract FantomAuction is
         (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, payAmount);
 
         if (minter != address(0) && royaltyAmount != 0) {
-            if (auction.payToken == address(0)) {
-                (bool royaltyTransferSuccess, ) = payable(minter).call{
-                    value: royaltyAmount
-                }("");
-                require(
-                    royaltyTransferSuccess,
-                    "failed to send the owner their royalties"
-                );
-            } else {
+            if (auction.payToken != address(0)) {
                 IERC20 payToken = IERC20(auction.payToken);
                 payToken.safeTransfer(minter, royaltyAmount);
             }
@@ -945,13 +932,7 @@ contract FantomAuction is
         uint256 _currentHighestBid
     ) private {
         Auction memory auction = auctions[_nftAddress][_tokenId];
-        if (auction.payToken == address(0)) {
-            // refund previous best (if bid exists)
-            (bool successRefund, ) = _currentHighestBidder.call{
-                value: _currentHighestBid
-            }("");
-            require(successRefund, "failed to refund previous bidder");
-        } else {
+        if (auction.payToken != address(0)) {
             IERC20 payToken = IERC20(auction.payToken);
             payToken.safeTransfer(_currentHighestBidder, _currentHighestBid);
         }
