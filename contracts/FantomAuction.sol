@@ -19,22 +19,11 @@ interface IFantomAddressRegistry {
     function bundleMarketplace() external view returns (address);
 
     function tokenRegistry() external view returns (address);
+
+    function royaltyRegistry() external view returns (address);
 }
 
 interface IFantomMarketplace {
-    function minters(address, uint256) external view returns (address);
-
-    function royalties(address, uint256) external view returns (uint16);
-
-    function collectionRoyalties(address)
-        external
-        view
-        returns (
-            uint16,
-            address,
-            address
-        );
-
     function getPrice(address) external view returns (int256);
 }
 
@@ -48,6 +37,14 @@ interface IFantomBundleMarketplace {
 
 interface IFantomTokenRegistry {
     function enabled(address) external returns (bool);
+}
+
+interface IFantomRoyaltyRegistry {
+    function royaltyInfo(
+        address _collection,
+        uint256 _tokenId,
+        uint256 _salePrice
+    ) external view returns (address, uint256);
 }
 
 /**
@@ -532,16 +529,19 @@ contract FantomAuction is
             payAmount = _winningBid;
         }
 
-        IFantomMarketplace marketplace = IFantomMarketplace(
-            addressRegistry.marketplace()
+        IFantomRoyaltyRegistry royaltyRegistry = IFantomRoyaltyRegistry(
+            addressRegistry.royaltyRegistry()
         );
-        address minter = marketplace.minters(_nftAddress, _tokenId);
-        uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
-        if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = payAmount.mul(royalty).div(10000);
+
+        address minter; 
+        uint256 royaltyAmount;
+
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, payAmount);
+
+        if (minter != address(0) && royaltyAmount != 0) {
             if (auction.payToken == address(0)) {
                 (bool royaltyTransferSuccess, ) = payable(minter).call{
-                    value: royaltyFee
+                    value: royaltyAmount
                 }("");
                 require(
                     royaltyTransferSuccess,
@@ -549,42 +549,14 @@ contract FantomAuction is
                 );
             } else {
                 IERC20 payToken = IERC20(auction.payToken);
-                payToken.safeTransfer(minter, royaltyFee);
+                payToken.safeTransfer(minter, royaltyAmount);
             }
-            payAmount = payAmount.sub(royaltyFee);
-        } else {
-            (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
-            if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = payAmount.mul(royalty).div(10000);
-                if (auction.payToken == address(0)) {
-                    (bool royaltyTransferSuccess, ) = payable(minter).call{
-                        value: royaltyFee
-                    }("");
-                    require(
-                        royaltyTransferSuccess,
-                        "failed to send the royalties"
-                    );
-                } else {
-                    IERC20 payToken = IERC20(auction.payToken);
-                    payToken.safeTransfer(minter, royaltyFee);
-                }
-                payAmount = payAmount.sub(royaltyFee);
-            }
-        }
+            payAmount = payAmount.sub(royaltyAmount);
+        } 
 
         if (payAmount > 0) {
-            //if (auction.payToken == address(0)) {
-            //    (bool ownerTransferSuccess, ) = auction.owner.call{
-            //        value: payAmount
-            //    }("");
-            //    require(
-            //        ownerTransferSuccess,
-            //       "failed to send the owner the auction balance"
-            //    );
-            //} else {
             IERC20 payToken = IERC20(auction.payToken);
             payToken.safeTransfer(auction.owner, payAmount);
-            //}
         }
 
         // Transfer the token to the winner
