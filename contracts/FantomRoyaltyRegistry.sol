@@ -71,7 +71,7 @@ contract FantomRoyaltyRegistry is Ownable {
     ) internal {
         RoyaltyInfo memory royalty = _royalties[_collection][_tokenId];
 
-        require(royalty.royaltyPercent == 0, "Royalty already set");
+        require(royalty.receiver == address(0), "Royalty already set");
         require(_royaltyPercent <= 10000, "Royalty too high");
 
         _royalties[_collection][_tokenId] = RoyaltyInfo(
