@@ -6,7 +6,7 @@ const {
 } = require('hardhat');
 
 const {
-  ONE, mockPayTokenMintAmount,
+  ONE, mockPayTokenMintAmount
 } = require('./index_ethers.js');
 
 async function callBefore() {
@@ -58,6 +58,7 @@ async function callBefore() {
   await fantomaddressregistry.connect(owner).updateBundleMarketplace(fantombundlemarketplace.address);
   await fantomaddressregistry.connect(owner).updateTokenRegistry(fantomtokenregistry.address);
   await fantomaddressregistry.connect(owner).updateRoyaltyRegistry(fantomRoyaltyRegistry.address);
+  await fantomaddressregistry.connect(owner).updatePriceFeed(fantomPriceFeed.address);
   await fantomauction.connect(owner).updateAddressRegistry(fantomaddressregistry.address);
   await fantommarketplace.connect(owner).updateAddressRegistry(fantomaddressregistry.address);
   await fantombundlemarketplace.connect(owner).updateAddressRegistry(fantomaddressregistry.address);
@@ -68,6 +69,8 @@ async function callBefore() {
   await fantomRoyaltyRegistry.connect(owner).updateMigrationManager(
     royaltyMigrationManager.address
   );
+
+  await fantomPriceFeed.connect(owner).registerOracle(mockerc20.address, mockPriceOracleProxy.address);
 }
 
 module.exports = {
