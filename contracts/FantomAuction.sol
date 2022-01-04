@@ -230,11 +230,8 @@ contract FantomAuction is
             "not owner and or contract not approved"
         );
 
-        require(
-            _payToken == address(0) ||
-                (addressRegistry.tokenRegistry() != address(0) &&
-                    IFantomTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(_payToken)),
+        require((addressRegistry.tokenRegistry() != address(0) &&
+                IFantomTokenRegistry(addressRegistry.tokenRegistry()).enabled(_payToken)),
             "invalid pay token"
         );
 
@@ -255,34 +252,6 @@ contract FantomAuction is
         );
     }
 
-    /**
-     @notice Places a new bid, out bidding the existing bidder if found and criteria is reached
-     @dev Only callable when the auction is open
-     @dev Bids from smart contracts are prohibited to prevent griefing with always reverting receiver
-     @param _nftAddress ERC 721 Address
-     @param _tokenId Token ID of the item being auctioned
-     */
-    /* function placeBid(address _nftAddress, uint256 _tokenId)
-        external
-        payable
-        nonReentrant
-        whenNotPaused
-    {
-        require(_msgSender().isContract() == false, "no contracts permitted");
-
-        // Check the auction to see if this is a valid bid
-        Auction memory auction = auctions[_nftAddress][_tokenId];
-
-        // Ensure auction is in flight
-        require(
-            _getNow() >= auction.startTime && _getNow() <= auction.endTime,
-            "bidding outside of the auction window"
-        );
-        require(auction.payToken == address(0), "invalid pay token");
-
-        _placeBid(_nftAddress, _tokenId, msg.value);
-    }
- */
     /**
      @notice Places a new bid, out bidding the existing bidder if found and criteria is reached
      @dev Only callable when the auction is open
@@ -343,13 +312,13 @@ contract FantomAuction is
             "failed to outbid highest bidder"
         );
 
-        if (auction.payToken != address(0)) {
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transferFrom(_msgSender(), address(this), _bidAmount),
-                "insufficient balance or not approved"
-            );
-        }
+
+        IERC20 payToken = IERC20(auction.payToken);
+        require(
+            payToken.transferFrom(_msgSender(), address(this), _bidAmount),
+            "insufficient balance or not approved"
+        );
+
 
         if (highestBid.bidder != address(0)) {
             _refundHighestBidder(
@@ -509,14 +478,12 @@ contract FantomAuction is
                 .mul(platformFee)
                 .div(1000);
 
-            if (auction.payToken != address(0)) {
                 // Send platform fee
                 IERC20 payToken = IERC20(auction.payToken);
                 payToken.safeTransfer(
                     platformFeeRecipient,
                     platformFeeAboveReserve
                 );
-            }
 
             // Send remaining to designer
             payAmount = _winningBid.sub(platformFeeAboveReserve);
@@ -534,10 +501,9 @@ contract FantomAuction is
         (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, payAmount);
 
         if (minter != address(0) && royaltyAmount != 0) {
-            if (auction.payToken != address(0)) {
-                IERC20 payToken = IERC20(auction.payToken);
-                payToken.safeTransfer(minter, royaltyAmount);
-            }
+            IERC20 payToken = IERC20(auction.payToken);
+            payToken.safeTransfer(minter, royaltyAmount);
+            
             payAmount = payAmount.sub(royaltyAmount);
         } 
 
@@ -932,10 +898,10 @@ contract FantomAuction is
         uint256 _currentHighestBid
     ) private {
         Auction memory auction = auctions[_nftAddress][_tokenId];
-        if (auction.payToken != address(0)) {
-            IERC20 payToken = IERC20(auction.payToken);
-            payToken.safeTransfer(_currentHighestBidder, _currentHighestBid);
-        }
+        
+        IERC20 payToken = IERC20(auction.payToken);
+        payToken.safeTransfer(_currentHighestBidder, _currentHighestBid);
+        
         emit BidRefunded(
             _nftAddress,
             _tokenId,
