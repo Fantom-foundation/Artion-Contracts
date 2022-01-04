@@ -27,6 +27,7 @@ contract('FantomAuction', async function () {
         // Get all compiled contracts
         MockERC20 = await ethers.getContractFactory('MockERC20');
         MockERC721 = await ethers.getContractFactory('MockERC721');
+        MockPriceOracleProxy = await ethers.getContractFactory('MockPriceOracleProxy');
         FantomAuction = await ethers.getContractFactory('MockFantomAuction');
         FantomArtion = await ethers.getContractFactory('Artion');
         FantomMarketplace = await ethers.getContractFactory('FantomMarketplace');
@@ -34,6 +35,7 @@ contract('FantomAuction', async function () {
         FantomAddressRegistry = await ethers.getContractFactory('FantomAddressRegistry');
         FantomTokenRegistry = await ethers.getContractFactory('FantomTokenRegistry');
         FantomRoyaltyRegistry = await ethers.getContractFactory('FantomRoyaltyRegistry');
+        FantomPriceFeed = await ethers.getContractFactory('FantomPriceFeed');
 
         // Get all users in the unit test
         [owner, bidder, seller, winner, hacker, other] = await ethers.getSigners();
@@ -43,6 +45,8 @@ contract('FantomAuction', async function () {
         await mockerc20.deployed();
         mockerc721 = await MockERC721.deploy(mockNFTokenName, mockNFTokenSymbol);
         await mockerc721.deployed();
+        mockPriceOracleProxy = await MockPriceOracleProxy.deploy();
+        await mockPriceOracleProxy.deployed();
         fantomauction = await FantomAuction.deploy();
         await fantomauction.deployed();
         fantomartion = await FantomArtion.deploy(owner.address, ONE);
@@ -57,6 +61,8 @@ contract('FantomAuction', async function () {
         await fantomtokenregistry.deployed();
         fantomRoyaltyRegistry = await FantomRoyaltyRegistry.deploy();
         await fantomtokenregistry.deployed();
+        fantomPriceFeed = await FantomPriceFeed.deploy(fantomaddressregistry.address, mockerc20.address);
+        await fantomPriceFeed.deployed();
 
         // Call function `callBefore()` in `./utils/before.js` to establish testing environment
         await callBefore();

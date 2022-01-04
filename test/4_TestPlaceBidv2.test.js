@@ -27,7 +27,8 @@ contract('FantomAuction', async function () {
         FantomAddressRegistry = await ethers.getContractFactory('FantomAddressRegistry');
         FantomTokenRegistry = await ethers.getContractFactory('FantomTokenRegistry');
         FantomRoyaltyRegistry = await ethers.getContractFactory('FantomRoyaltyRegistry');
-
+        FantomPriceFeed = await ethers.getContractFactory('FantomPriceFeed');
+        MockPriceOracleProxy = await ethers.getContractFactory('MockPriceOracleProxy');
         // Get all users in the unit test
         [owner, bidder, seller, winner, hacker, other] = await ethers.getSigners();
 
@@ -50,6 +51,10 @@ contract('FantomAuction', async function () {
         await fantomtokenregistry.deployed();
         fantomRoyaltyRegistry = await FantomRoyaltyRegistry.deploy();
         await fantomtokenregistry.deployed();
+        fantomPriceFeed = await FantomPriceFeed.deploy(fantomaddressregistry.address, mockerc20.address);
+        await fantomPriceFeed.deployed();
+        mockPriceOracleProxy = await MockPriceOracleProxy.deploy();
+        await mockPriceOracleProxy.deployed();
 
         // Call function `callBefore()` in `./utils/before.js` to establish testing environment
         await callBefore();
