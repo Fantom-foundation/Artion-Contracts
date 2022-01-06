@@ -25,13 +25,27 @@ const mockNFTokenName = 'Test NFT';
 const mockNFTokenSymbol = 'NFT';
 
 // Set user `seller` and `bidder` variables for `FantomAuction`
-const sellerReservePrice = new BigNumber.from("100000000000000000000"); // 100 FTM
-const sellerNewReservePrice = new BigNumber.from("50000000000000000000"); // 50 FTM
-const bidderBidAmountMinimum = new BigNumber.from("25000000000000000000"); // 25 FTM
+const sellerReservePrice = new BigNumber.from('100000000000000000000'); // 100 FTM
+const sellerNewReservePrice = new BigNumber.from('50000000000000000000'); // 50 FTM
+const bidderBidAmountMinimum = new BigNumber.from('25000000000000000000'); // 25 FTM
 
 module.exports = {
-  ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE,
-  mockPayTokenName, mockPayTokenSymbol, mockPayTokenMintAmount,
-  mockNFTokenName, mockNFTokenSymbol,
-  sellerReservePrice, sellerNewReservePrice, bidderBidAmountMinimum
+  ZERO,
+  ONE,
+  TWO,
+  THREE,
+  FOUR,
+  FIVE,
+  SIX,
+  SEVEN,
+  EIGHT,
+  NINE,
+  mockPayTokenName,
+  mockPayTokenSymbol,
+  mockPayTokenMintAmount,
+  mockNFTokenName,
+  mockNFTokenSymbol,
+  sellerReservePrice,
+  sellerNewReservePrice,
+  bidderBidAmountMinimum
 };

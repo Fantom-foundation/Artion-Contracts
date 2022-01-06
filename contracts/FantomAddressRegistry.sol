@@ -138,7 +138,10 @@ contract FantomAddressRegistry is Ownable {
      @notice Update royalty registry contract
      @dev Only admin
      */
-    function updateRoyaltyRegistry(address _royaltyRegistry) external onlyOwner {
+    function updateRoyaltyRegistry(address _royaltyRegistry)
+        external
+        onlyOwner
+    {
         royaltyRegistry = _royaltyRegistry;
     }
 }

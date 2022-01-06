@@ -230,8 +230,11 @@ contract FantomAuction is
             "not owner and or contract not approved"
         );
 
-        require((addressRegistry.tokenRegistry() != address(0) &&
-                IFantomTokenRegistry(addressRegistry.tokenRegistry()).enabled(_payToken)),
+        require(
+            (addressRegistry.tokenRegistry() != address(0) &&
+                IFantomTokenRegistry(addressRegistry.tokenRegistry()).enabled(
+                    _payToken
+                )),
             "invalid pay token"
         );
 
@@ -276,10 +279,7 @@ contract FantomAuction is
             "bidding before auction started"
         );
 
-        require(
-            _getNow() <= auction.endTime,
-            "bidding outside auction window"
-        );
+        require(_getNow() <= auction.endTime, "bidding outside auction window");
 
         require(
             auction.payToken != address(0),
@@ -312,13 +312,11 @@ contract FantomAuction is
             "failed to outbid highest bidder"
         );
 
-
         IERC20 payToken = IERC20(auction.payToken);
         require(
             payToken.transferFrom(_msgSender(), address(this), _bidAmount),
             "insufficient balance or not approved"
         );
-
 
         if (highestBid.bidder != address(0)) {
             _refundHighestBidder(
@@ -359,8 +357,7 @@ contract FantomAuction is
         uint256 _endTime = auctions[_nftAddress][_tokenId].endTime;
 
         require(
-            _getNow() > _endTime &&
-                (_getNow() - _endTime >= 43200),
+            _getNow() > _endTime && (_getNow() - _endTime >= 43200),
             "can withdraw only after 12 hours (after auction ended)"
         );
 
@@ -453,11 +450,11 @@ contract FantomAuction is
      @param _tokenId Token ID of the item being auctioned
      */
     function _resultAuction(
-        address _nftAddress, 
-        uint256 _tokenId, 
-        address _winner, 
+        address _nftAddress,
+        uint256 _tokenId,
+        address _winner,
         uint256 _winningBid
-        ) internal {
+    ) internal {
         // Check the auction to see if it can be resulted
         Auction storage auction = auctions[_nftAddress][_tokenId];
 
@@ -478,12 +475,12 @@ contract FantomAuction is
                 .mul(platformFee)
                 .div(1000);
 
-                // Send platform fee
-                IERC20 payToken = IERC20(auction.payToken);
-                payToken.safeTransfer(
-                    platformFeeRecipient,
-                    platformFeeAboveReserve
-                );
+            // Send platform fee
+            IERC20 payToken = IERC20(auction.payToken);
+            payToken.safeTransfer(
+                platformFeeRecipient,
+                platformFeeAboveReserve
+            );
 
             // Send remaining to designer
             payAmount = _winningBid.sub(platformFeeAboveReserve);
@@ -495,17 +492,21 @@ contract FantomAuction is
             addressRegistry.royaltyRegistry()
         );
 
-        address minter; 
+        address minter;
         uint256 royaltyAmount;
 
-        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, payAmount);
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(
+            _nftAddress,
+            _tokenId,
+            payAmount
+        );
 
         if (minter != address(0) && royaltyAmount != 0) {
             IERC20 payToken = IERC20(auction.payToken);
             payToken.safeTransfer(minter, royaltyAmount);
-            
+
             payAmount = payAmount.sub(royaltyAmount);
-        } 
+        }
 
         if (payAmount > 0) {
             IERC20 payToken = IERC20(auction.payToken);
@@ -521,7 +522,8 @@ contract FantomAuction is
 
         IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
             .validateItemSold(_nftAddress, _tokenId, uint256(1));
-        int256 price = IFantomMarketplace(addressRegistry.marketplace()).getPrice(auction.payToken);
+        int256 price = IFantomMarketplace(addressRegistry.marketplace())
+            .getPrice(auction.payToken);
 
         emit AuctionResulted(
             _msgSender(),
@@ -858,7 +860,11 @@ contract FantomAuction is
         emit AuctionCreated(_nftAddress, _tokenId, _payToken);
     }
 
-    function _cancelAuction(address _nftAddress, uint256 _tokenId, address owner) private {
+    function _cancelAuction(
+        address _nftAddress,
+        uint256 _tokenId,
+        address owner
+    ) private {
         // refund existing top bidder if found
         HighestBid memory highestBid = highestBids[_nftAddress][_tokenId];
         if (highestBid.bidder != address(0)) {
@@ -898,10 +904,10 @@ contract FantomAuction is
         uint256 _currentHighestBid
     ) private {
         Auction memory auction = auctions[_nftAddress][_tokenId];
-        
+
         IERC20 payToken = IERC20(auction.payToken);
         payToken.safeTransfer(_currentHighestBidder, _currentHighestBid);
-        
+
         emit BidRefunded(
             _nftAddress,
             _tokenId,

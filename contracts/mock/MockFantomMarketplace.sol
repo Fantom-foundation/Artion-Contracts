@@ -15,7 +15,7 @@ contract MockFantomMarketplace is FantomMarketplace {
         time += t;
     }
 
-    function _getNow() internal override view returns (uint256) {
+    function _getNow() internal view override returns (uint256) {
         return time;
     }
 }

@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-import './ERC2981ContractWideRoyalties.sol';
+import "./ERC2981ContractWideRoyalties.sol";
 
 /// @title Example of ERC721 contract with ERC2981
 /// @author Simon Fremaux (@dievardump)
@@ -41,7 +41,7 @@ contract ERC721WithContractWideRoyalties is
     /// @param to the recipient of the token
     function mint(address to) external {
         uint256 tokenId = nextTokenId;
-        _safeMint(to, tokenId, '');
+        _safeMint(to, tokenId, "");
 
         nextTokenId = tokenId + 1;
     }
@@ -51,7 +51,7 @@ contract ERC721WithContractWideRoyalties is
     function mintBatch(address[] memory recipients) external {
         uint256 tokenId = nextTokenId;
         for (uint256 i; i < recipients.length; i++) {
-            _safeMint(recipients[i], tokenId, '');
+            _safeMint(recipients[i], tokenId, "");
             tokenId++;
         }
 

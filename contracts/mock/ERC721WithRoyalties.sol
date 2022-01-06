@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-import './ERC2981PerTokenRoyalties.sol';
+import "./ERC2981PerTokenRoyalties.sol";
 
 /// @title Example of ERC721 contract with ERC2981
 /// @author Simon Fremaux (@dievardump)
@@ -36,7 +36,7 @@ contract ERC721WithRoyalties is ERC721, ERC2981PerTokenRoyalties {
         uint256 royaltyValue
     ) external {
         uint256 tokenId = nextTokenId;
-        _safeMint(to, tokenId, '');
+        _safeMint(to, tokenId, "");
 
         if (royaltyValue > 0) {
             _setTokenRoyalty(tokenId, royaltyRecipient, royaltyValue);
@@ -58,11 +58,11 @@ contract ERC721WithRoyalties is ERC721, ERC2981PerTokenRoyalties {
         require(
             recipients.length == royaltyRecipients.length &&
                 recipients.length == royaltyValues.length,
-            'ERC721: Arrays length mismatch'
+            "ERC721: Arrays length mismatch"
         );
 
         for (uint256 i; i < recipients.length; i++) {
-            _safeMint(recipients[i], tokenId, '');
+            _safeMint(recipients[i], tokenId, "");
             if (royaltyValues[i] > 0) {
                 _setTokenRoyalty(
                     tokenId,

@@ -370,10 +370,14 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             addressRegistry.royaltyRegistry()
         );
 
-        address minter; 
+        address minter;
         uint256 royaltyAmount;
 
-        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, price.sub(feeAmount));
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(
+            _nftAddress,
+            _tokenId,
+            price.sub(feeAmount)
+        );
 
         if (minter != address(0) && royaltyAmount != 0) {
             IERC20(_payToken).safeTransferFrom(
@@ -501,22 +505,21 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
 
-
         IFantomRoyaltyRegistry royaltyRegistry = IFantomRoyaltyRegistry(
             addressRegistry.royaltyRegistry()
         );
 
-        address minter; 
+        address minter;
         uint256 royaltyAmount;
 
-        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(_nftAddress, _tokenId, price.sub(feeAmount));
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(
+            _nftAddress,
+            _tokenId,
+            price.sub(feeAmount)
+        );
 
         if (minter != address(0) && royaltyAmount != 0) {
-            offer.payToken.safeTransferFrom(
-                _creator,
-                minter,
-                royaltyAmount
-            );
+            offer.payToken.safeTransferFrom(_creator, minter, royaltyAmount);
 
             feeAmount = feeAmount.add(royaltyAmount);
         }

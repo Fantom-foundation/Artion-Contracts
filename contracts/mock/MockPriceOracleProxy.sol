@@ -10,11 +10,11 @@ contract MockPriceOracleProxy is IOracle {
     int256 price;
     uint8 decimal;
 
-    function latestAnswer() override external view returns (int256) {
+    function latestAnswer() external view override returns (int256) {
         return price;
     }
 
-    function decimals() override external view returns (uint8) {
+    function decimals() external view override returns (uint8) {
         return decimal;
     }
 }
