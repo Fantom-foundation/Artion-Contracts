@@ -6,11 +6,17 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+import "./library/ERC2981PerTokenRoyalties.sol";
+
 /**
  * @title FantomNFTTradable
  * FantomNFTTradable - ERC721 contract that whitelists a trading address, and has minting functionality.
  */
-contract FantomNFTTradable is ERC721URIStorage, Ownable {
+contract FantomNFTTradable is
+    ERC721URIStorage,
+    ERC2981PerTokenRoyalties,
+    Ownable
+{
     using SafeMath for uint256;
 
     /// @dev Events of the contract
@@ -22,17 +28,23 @@ contract FantomNFTTradable is ERC721URIStorage, Ownable {
     );
     event UpdatePlatformFee(uint256 platformFee);
     event UpdateFeeRecipient(address payable feeRecipient);
+    event UpdateTradableManager(address tradableManager);
 
     address auction;
     address marketplace;
     address bundleMarketplace;
     uint256 private _currentTokenId = 0;
 
+    bool public isPrivate;
+
     /// @notice Platform fee
     uint256 public platformFee;
 
     /// @notice Platform fee receipient
     address payable public feeReceipient;
+
+    /// @notice tradableManager;
+    address public tradableManager;
 
     /// @notice Contract constructor
     constructor(
@@ -42,13 +54,28 @@ contract FantomNFTTradable is ERC721URIStorage, Ownable {
         address _marketplace,
         address _bundleMarketplace,
         uint256 _platformFee,
-        address payable _feeReceipient
+        address payable _feeReceipient,
+        bool _isPrivate,
+        address _tradableManager
     ) public ERC721(_name, _symbol) {
         auction = _auction;
         marketplace = _marketplace;
         bundleMarketplace = _bundleMarketplace;
         platformFee = _platformFee;
         feeReceipient = _feeReceipient;
+        isPrivate = _isPrivate;
+
+        if (isPrivate) {
+            require(_tradableManager != address(0), "invalid address");
+            tradableManager = _tradableManager;
+        }
+    }
+
+    modifier onlyAuthorised() {
+        if (isPrivate) {
+            require(_msgSender() == tradableManager, "not authorized");
+        }
+        _;
     }
 
     /**
@@ -75,16 +102,39 @@ contract FantomNFTTradable is ERC721URIStorage, Ownable {
     }
 
     /**
+     @notice Method for updating tradable manager address
+     @dev Only admin
+     @param _tradableManager address that is allowed to mint (if the collection is private)
+     */
+    function updateTradableManager(address _tradableManager)
+        external
+        onlyOwner
+    {
+        tradableManager = _tradableManager;
+        emit UpdateTradableManager(_tradableManager);
+    }
+
+    /**
      * @dev Mints a token to an address with a tokenURI.
      * @param _to address of the future owner of the token
      */
-    function mint(address _to, string calldata _tokenUri) external payable {
+    function mint(
+        address _to,
+        string calldata _tokenUri,
+        address royaltyRecipient,
+        uint256 royaltyValue
+    ) external payable onlyAuthorised {
         require(msg.value >= platformFee, "Insufficient funds to mint.");
 
         uint256 newTokenId = _getNextTokenId();
         _safeMint(_to, newTokenId);
         _setTokenURI(newTokenId, _tokenUri);
         _incrementTokenId();
+
+        //set royalty
+        if (royaltyValue > 0) {
+            _setTokenRoyalty(newTokenId, royaltyRecipient, royaltyValue);
+        }
 
         // Send FTM fee to fee recipient
         (bool success, ) = feeReceipient.call{value: msg.value}("");
@@ -174,5 +224,16 @@ contract FantomNFTTradable is ERC721URIStorage, Ownable {
         address owner = ERC721.ownerOf(tokenId);
         if (isApprovedForAll(owner, spender)) return true;
         return super._isApprovedOrOwner(spender, tokenId);
+    }
+
+    /// @inheritdoc	ERC165
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
