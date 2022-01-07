@@ -380,7 +380,7 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(
            (_getNow() > _startTime && _getNow() - _startTime >= 5184000) || (_getNow() > _endTime && (_getNow() - _endTime >= 43200)),
-            "can withdraw only after 12 hours (after auction ended)"
+            "can withdraw either after auction ended 12 hours OR if auction started 2 months ago"
         );
 
         uint256 previousBid = highestBid.bid;
