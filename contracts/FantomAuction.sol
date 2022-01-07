@@ -376,9 +376,10 @@ contract FantomAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         uint256 _endTime = auctions[_nftAddress][_tokenId].endTime;
+        uint256 _startTime = auctions[_nftAddress][_tokenId].startTime;
 
         require(
-            _getNow() > _endTime && (_getNow() - _endTime >= 43200),
+           (_getNow() > _startTime && _getNow() - _startTime >= 5184000) || (_getNow() > _endTime && (_getNow() - _endTime >= 43200)),
             "can withdraw only after 12 hours (after auction ended)"
         );
 
