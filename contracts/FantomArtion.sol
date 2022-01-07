@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract Artion is ERC721URIStorage, Ownable {
+import "./library/ERC2981PerTokenRoyalties.sol";
+
+contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
     using SafeMath for uint256;
 
     /// @dev Events of the contract
@@ -46,11 +48,12 @@ contract Artion is ERC721URIStorage, Ownable {
      @param _tokenUri URI for the token being minted
      @return uint256 The token ID of the token that was minted
      */
-    function mint(address _beneficiary, string calldata _tokenUri)
-        external
-        payable
-        returns (uint256)
-    {
+    function mint(
+        address _beneficiary,
+        string calldata _tokenUri,
+        address _royaltyRecipient,
+        uint256 _royaltyValue
+    ) external payable returns (uint256) {
         require(msg.value >= platformFee, "Insufficient funds to mint.");
 
         // Valid args
@@ -62,6 +65,11 @@ contract Artion is ERC721URIStorage, Ownable {
         // Mint token and set token URI
         _safeMint(_beneficiary, tokenId);
         _setTokenURI(tokenId, _tokenUri);
+
+        //set royalty
+        if (_royaltyValue > 0) {
+            _setTokenRoyalty(tokenId, _royaltyRecipient, _royaltyValue);
+        }
 
         // Send FTM fee to fee recipient
         feeReceipient.transfer(msg.value);
@@ -172,5 +180,16 @@ contract Artion is ERC721URIStorage, Ownable {
             _designer != address(0),
             "_assertMintingParamsValid: Designer is zero address"
         );
+    }
+
+    /// @inheritdoc	ERC165
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
