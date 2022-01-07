@@ -6,7 +6,6 @@ const { expect } = require('chai');
 const {
   ZERO,
   ONE,
-  TWO,
   mockPayTokenName,
   mockPayTokenSymbol,
   etherToWei,

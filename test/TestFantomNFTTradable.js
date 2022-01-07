@@ -14,6 +14,8 @@ const {
 } = require('./utils/index.js');
 
 const _INTERFACE_ID_ROYALTIES_EIP2981 = '0x2a55205a';
+const _INTERFACE_ID_ERC2981_SETTER = '0x3bea9a6a';
+
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 const FantomRoyaltyRegistry = artifacts.require('FantomRoyaltyRegistry');
@@ -61,6 +63,30 @@ contract(
         tradableManager
       );
 
+      this.fantomNFTTradableCollection = await FantomNFTTradable.new(
+        'Artion',
+        'ART',
+        ZERO_ADDRESS,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS,
+        etherToWei(1),
+        platformFeeRecipient,
+        false,
+        ZERO_ADDRESS
+      );
+
+      this.fantomNFTTradableIndividual = await FantomNFTTradable.new(
+        'Artion',
+        'ART',
+        ZERO_ADDRESS,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS,
+        etherToWei(1),
+        platformFeeRecipient,
+        true,
+        tradableManager
+      );
+
       this.fantomRoyaltyRegistry = await FantomRoyaltyRegistry.new();
       this.fantomRoyaltyRegistry.updateMigrationManager(
         royaltyMigrationManager
@@ -72,6 +98,14 @@ contract(
         expect(
           await this.fantomNFTTradable.supportsInterface(
             _INTERFACE_ID_ROYALTIES_EIP2981
+          )
+        ).to.be.true;
+      });
+
+      it('It should support IERC2981RoyaltySetter', async function () {
+        expect(
+          await this.fantomNFTTradable.supportsInterface(
+            _INTERFACE_ID_ERC2981_SETTER
           )
         ).to.be.true;
       });
@@ -172,6 +206,82 @@ contract(
 
         expect(_receiver.toString()).to.be.equal(ZERO_ADDRESS);
         expect(weiToEther(_royaltyAmount)).to.be.equal('0'); //1% of 1000
+      });
+    });
+
+    describe('NFTTradable Collection Royalty', function () {
+      it('It should allow minting (no royalty included)', async function () {
+        await this.fantomNFTTradableCollection.mint(
+          owner,
+          '',
+          ZERO_ADDRESS,
+          new BN('0'),
+          { value: etherToWei(1) }
+        );
+      });
+
+      it('It should not allow a non-owner to set collection-wide royalty ', async function () {
+        await expectRevert(
+          this.fantomRoyaltyRegistry.setDefaultRoyalty(
+            this.fantomNFTTradableCollection.address,
+            receiver,
+            new BN('200'),
+            { from: tradableManager }
+          ),
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it('It should allow an owner to set collection-wide royalty through RoyaltyRegistry [IERC2981RoyaltySetter]', async function () {
+        await this.fantomRoyaltyRegistry.setDefaultRoyalty(
+          this.fantomNFTTradableCollection.address,
+          receiver,
+          new BN('200')
+        );
+
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.fantomNFTTradableCollection.address,
+          ZERO,
+          etherToWei(1000)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(receiver);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('20'); //2% of 1000
+      });
+    });
+
+    describe('NFTTradable Individual Royalty', function () {
+      it('It should allow minting (no royalty included)', async function () {
+        await this.fantomNFTTradableIndividual.mint(
+          owner,
+          '',
+          ZERO_ADDRESS,
+          new BN('0'),
+          { value: etherToWei(1), from: tradableManager }
+        );
+      });
+
+      it('It should royalty migration manager to set individual royalty through RoyaltyRegistry [IERC2981RoyaltySetter]', async function () {
+        await this.fantomRoyaltyRegistry.setRoyalty(
+          this.fantomNFTTradableIndividual.address,
+          ONE,
+          receiver,
+          new BN('300'),
+          { from: royaltyMigrationManager }
+        );
+
+        let details = await this.fantomRoyaltyRegistry.royaltyInfo(
+          this.fantomNFTTradableIndividual.address,
+          ONE,
+          etherToWei(1000)
+        );
+
+        const { 0: _receiver, 1: _royaltyAmount } = details;
+
+        expect(_receiver.toString()).to.be.equal(receiver);
+        expect(weiToEther(_royaltyAmount)).to.be.equal('30'); //2% of 1000
       });
     });
   }
