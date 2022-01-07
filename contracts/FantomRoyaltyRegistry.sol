@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./library/IERC2981Royalties.sol";
+import "./library/IERC2981RoyaltySetter.sol";
 
 contract FantomRoyaltyRegistry is Ownable {
     address public royaltyMigrationManager;
@@ -16,6 +17,7 @@ contract FantomRoyaltyRegistry is Ownable {
     }
 
     bytes4 private constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+    bytes4 private constant _INTERFACE_ID_ERC2981_SETTER = 0x3bea9a6a;
 
     // NftAddress -> TokenId -> RoyaltyInfo
     mapping(address => mapping(uint256 => RoyaltyInfo)) internal _royalties;
@@ -34,6 +36,17 @@ contract FantomRoyaltyRegistry is Ownable {
         address _receiver,
         uint16 _royaltyPercent
     ) external onlyOwner {
+        if (
+            IERC165(_collection).supportsInterface(_INTERFACE_ID_ERC2981_SETTER)
+        ) {
+            IERC2981RoyaltySetter(_collection).setDefaultRoyalty(
+                _receiver,
+                _royaltyPercent
+            );
+
+            return;
+        }
+
         _setRoyalty(_collection, 0, _receiver, _royaltyPercent);
     }
 
@@ -43,6 +56,18 @@ contract FantomRoyaltyRegistry is Ownable {
         address _receiver,
         uint16 _royaltyPercent
     ) external auth(_collection, _tokenId) {
+        if (
+            IERC165(_collection).supportsInterface(_INTERFACE_ID_ERC2981_SETTER)
+        ) {
+            IERC2981RoyaltySetter(_collection).setTokenRoyalty(
+                _tokenId,
+                _receiver,
+                _royaltyPercent
+            );
+
+            return;
+        }
+
         _setRoyalty(_collection, _tokenId, _receiver, _royaltyPercent);
     }
 
@@ -87,20 +112,12 @@ contract FantomRoyaltyRegistry is Ownable {
     ) internal view returns (address _receiver, uint256 _royaltyAmount) {
         RoyaltyInfo memory royalty = _royalties[_collection][_tokenId];
 
-        if (royalty.receiver != address(0) && royalty.royaltyPercent != 0) {
-            _receiver = royalty.receiver;
-            _royaltyAmount = (_salePrice * royalty.royaltyPercent) / 10000;
-        } else {
+        if (royalty.receiver == address(0)) {
             royalty = _royalties[_collection][0]; // use collection-wide royalty
-
-            if (royalty.receiver != address(0) && royalty.royaltyPercent != 0) {
-                _receiver = royalty.receiver;
-                _royaltyAmount = (_salePrice * royalty.royaltyPercent) / 10000;
-            } else {
-                _receiver = address(0);
-                _royaltyAmount = 0;
-            }
         }
+
+        _receiver = royalty.receiver;
+        _royaltyAmount = (_salePrice * royalty.royaltyPercent) / 10000;
 
         return (_receiver, _royaltyAmount);
     }

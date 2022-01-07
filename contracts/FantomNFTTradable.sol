@@ -121,8 +121,8 @@ contract FantomNFTTradable is
     function mint(
         address _to,
         string calldata _tokenUri,
-        address royaltyRecipient,
-        uint256 royaltyValue
+        address _royaltyRecipient,
+        uint256 _royaltyValue
     ) external payable onlyAuthorised {
         require(msg.value >= platformFee, "Insufficient funds to mint.");
 
@@ -132,8 +132,8 @@ contract FantomNFTTradable is
         _incrementTokenId();
 
         //set royalty
-        if (royaltyValue > 0) {
-            _setTokenRoyalty(newTokenId, royaltyRecipient, royaltyValue);
+        if (_royaltyValue > 0) {
+            _setTokenRoyalty(newTokenId, _royaltyRecipient, _royaltyValue);
         }
 
         // Send FTM fee to fee recipient
