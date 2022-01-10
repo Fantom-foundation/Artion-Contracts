@@ -14,25 +14,27 @@ async function main() {
     MARKETPLACE,
     BUNDLE_MARKETPLACE,
     '10000000000000000000',
-    TREASURY_ADDRESS
+    TREASURY_ADDRESS,
+    false,
+    '0x0000000000000000000000000000000000000000'
   );
   await nft.deployed();
   console.log('FantomNFTTradable deployed to:', nft.address);
 
-  const NFTTradablePrivate = await ethers.getContractFactory(
-    'FantomNFTTradablePrivate'
-  );
-  const nftPrivate = await NFTTradablePrivate.deploy(
-    'IArtion',
-    'IART',
-    AUCTION,
-    MARKETPLACE,
-    BUNDLE_MARKETPLACE,
-    '10000000000000000000',
-    TREASURY_ADDRESS
-  );
-  await nftPrivate.deployed();
-  console.log('FantomNFTTradablePrivate deployed to:', nftPrivate.address);
+  // const NFTTradablePrivate = await ethers.getContractFactory(
+  //   'FantomNFTTradablePrivate'
+  // );
+  // const nftPrivate = await NFTTradablePrivate.deploy(
+  //   'IArtion',
+  //   'IART',
+  //   AUCTION,
+  //   MARKETPLACE,
+  //   BUNDLE_MARKETPLACE,
+  //   '10000000000000000000',
+  //   TREASURY_ADDRESS
+  // );
+  // await nftPrivate.deployed();
+  // console.log('FantomNFTTradablePrivate deployed to:', nftPrivate.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
