@@ -30,6 +30,8 @@ interface IFantomAddressRegistry {
     function tokenRegistry() external view returns (address);
 
     function priceFeed() external view returns (address);
+
+    function royaltyRegistry() external view returns (address);
 }
 
 interface IFantomBundleMarketplace {
@@ -52,6 +54,14 @@ interface IFantomPriceFeed {
     function wFTM() external view returns (address);
 
     function getPrice(address) external view returns (int256, uint8);
+}
+
+interface IFantomRoyaltyRegistry {
+    function royaltyInfo(
+        address _collection,
+        uint256 _tokenId,
+        uint256 _salePrice
+    ) external view returns (address, uint256);
 }
 
 contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
@@ -124,20 +134,8 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 deadline;
     }
 
-    struct CollectionRoyalty {
-        uint16 royalty;
-        address creator;
-        address feeRecipient;
-    }
-
     bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
     bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
-
-    /// @notice NftAddress -> Token ID -> Minter
-    mapping(address => mapping(uint256 => address)) public minters;
-
-    /// @notice NftAddress -> Token ID -> Royalty
-    mapping(address => mapping(uint256 => uint16)) public royalties;
 
     /// @notice NftAddress -> Token ID -> Owner -> Listing item
     mapping(address => mapping(uint256 => mapping(address => Listing)))
@@ -152,9 +150,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     /// @notice Platform fee receipient
     address payable public feeReceipient;
-
-    /// @notice NftAddress -> Royalty
-    mapping(address => CollectionRoyalty) public collectionRoyalties;
 
     /// @notice Address registry
     IFantomAddressRegistry public addressRegistry;
@@ -371,34 +366,27 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             feeAmount
         );
 
-        address minter = minters[_nftAddress][_tokenId];
-        uint16 royalty = royalties[_nftAddress][_tokenId];
-        if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
+        IFantomRoyaltyRegistry royaltyRegistry = IFantomRoyaltyRegistry(
+            addressRegistry.royaltyRegistry()
+        );
 
+        address minter;
+        uint256 royaltyAmount;
+
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(
+            _nftAddress,
+            _tokenId,
+            price.sub(feeAmount)
+        );
+
+        if (minter != address(0) && royaltyAmount != 0) {
             IERC20(_payToken).safeTransferFrom(
                 _msgSender(),
                 minter,
-                royaltyFee
+                royaltyAmount
             );
 
-            feeAmount = feeAmount.add(royaltyFee);
-        } else {
-            minter = collectionRoyalties[_nftAddress].feeRecipient;
-            royalty = collectionRoyalties[_nftAddress].royalty;
-            if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(
-                    10000
-                );
-
-                IERC20(_payToken).safeTransferFrom(
-                    _msgSender(),
-                    minter,
-                    royaltyFee
-                );
-
-                feeAmount = feeAmount.add(royaltyFee);
-            }
+            feeAmount = feeAmount.add(royaltyAmount);
         }
 
         IERC20(_payToken).safeTransferFrom(
@@ -514,25 +502,26 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
-        uint256 royaltyFee;
 
         offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
 
-        address minter = minters[_nftAddress][_tokenId];
-        uint16 royalty = royalties[_nftAddress][_tokenId];
+        IFantomRoyaltyRegistry royaltyRegistry = IFantomRoyaltyRegistry(
+            addressRegistry.royaltyRegistry()
+        );
 
-        if (minter != address(0) && royalty != 0) {
-            royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
-            offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
-            feeAmount = feeAmount.add(royaltyFee);
-        } else {
-            minter = collectionRoyalties[_nftAddress].feeRecipient;
-            royalty = collectionRoyalties[_nftAddress].royalty;
-            if (minter != address(0) && royalty != 0) {
-                royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
-                offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
-                feeAmount = feeAmount.add(royaltyFee);
-            }
+        address minter;
+        uint256 royaltyAmount;
+
+        (minter, royaltyAmount) = royaltyRegistry.royaltyInfo(
+            _nftAddress,
+            _tokenId,
+            price.sub(feeAmount)
+        );
+
+        if (minter != address(0) && royaltyAmount != 0) {
+            offer.payToken.safeTransferFrom(_creator, minter, royaltyAmount);
+
+            feeAmount = feeAmount.add(royaltyAmount);
         }
 
         offer.payToken.safeTransferFrom(
@@ -575,77 +564,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
-    }
-
-    /// @notice Method for setting royalty
-    /// @param _nftAddress NFT contract address
-    /// @param _tokenId TokenId
-    /// @param _royalty Royalty
-    function registerRoyalty(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint16 _royalty
-    ) external {
-        require(_royalty <= 10000, "invalid royalty");
-        require(_isFantomNFT(_nftAddress), "invalid nft address");
-
-        _validOwner(_nftAddress, _tokenId, _msgSender(), 1);
-
-        require(
-            minters[_nftAddress][_tokenId] == address(0),
-            "royalty already set"
-        );
-        minters[_nftAddress][_tokenId] = _msgSender();
-        royalties[_nftAddress][_tokenId] = _royalty;
-    }
-
-    /// @notice Method for setting royalty
-    /// @param _nftAddress NFT contract address
-    /// @param _royalty Royalty
-    function registerCollectionRoyalty(
-        address _nftAddress,
-        address _creator,
-        uint16 _royalty,
-        address _feeRecipient
-    ) external onlyOwner {
-        require(_creator != address(0), "invalid creator address");
-        require(_royalty <= 10000, "invalid royalty");
-        require(
-            _royalty == 0 || _feeRecipient != address(0),
-            "invalid fee recipient address"
-        );
-        require(!_isFantomNFT(_nftAddress), "invalid nft address");
-
-        if (collectionRoyalties[_nftAddress].creator == address(0)) {
-            collectionRoyalties[_nftAddress] = CollectionRoyalty(
-                _royalty,
-                _creator,
-                _feeRecipient
-            );
-        } else {
-            CollectionRoyalty storage collectionRoyalty = collectionRoyalties[
-                _nftAddress
-            ];
-
-            collectionRoyalty.royalty = _royalty;
-            collectionRoyalty.feeRecipient = _feeRecipient;
-            collectionRoyalty.creator = _creator;
-        }
-    }
-
-    function _isFantomNFT(address _nftAddress) internal view returns (bool) {
-        return
-            addressRegistry.artion() == _nftAddress ||
-            IFantomNFTFactory(addressRegistry.factory()).exists(_nftAddress) ||
-            IFantomNFTFactory(addressRegistry.privateFactory()).exists(
-                _nftAddress
-            ) ||
-            IFantomNFTFactory(addressRegistry.artFactory()).exists(
-                _nftAddress
-            ) ||
-            IFantomNFTFactory(addressRegistry.privateArtFactory()).exists(
-                _nftAddress
-            );
     }
 
     /**

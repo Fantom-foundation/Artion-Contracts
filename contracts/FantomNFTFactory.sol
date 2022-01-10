@@ -113,11 +113,12 @@ contract FantomNFTFactory is Ownable {
     /// @notice Method for deploy new FantomNFTTradable contract
     /// @param _name Name of NFT contract
     /// @param _symbol Symbol of NFT contract
-    function createNFTContract(string memory _name, string memory _symbol)
-        external
-        payable
-        returns (address)
-    {
+    function createNFTContract(
+        string memory _name,
+        string memory _symbol,
+        bool _isPrivate,
+        address _tradableManager
+    ) external payable returns (address) {
         require(msg.value >= platformFee, "Insufficient funds.");
         (bool success, ) = feeRecipient.call{value: msg.value}("");
         require(success, "Transfer failed");
@@ -129,8 +130,11 @@ contract FantomNFTFactory is Ownable {
             marketplace,
             bundleMarketplace,
             mintFee,
-            feeRecipient
+            feeRecipient,
+            _isPrivate,
+            _tradableManager
         );
+
         exists[address(nft)] = true;
         nft.transferOwnership(_msgSender());
         emit ContractCreated(_msgSender(), address(nft));
