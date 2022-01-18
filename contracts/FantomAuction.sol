@@ -27,14 +27,6 @@ interface IFantomMarketplace {
     function getPrice(address) external view returns (int256);
 }
 
-interface IFantomBundleMarketplace {
-    function validateItemSold(
-        address,
-        uint256,
-        uint256
-    ) external;
-}
-
 interface IFantomTokenRegistry {
     function enabled(address) external returns (bool);
 }
@@ -520,8 +512,6 @@ contract FantomAuction is
             _tokenId
         );
 
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, uint256(1));
         int256 price = IFantomMarketplace(addressRegistry.marketplace())
             .getPrice(auction.payToken);
 
