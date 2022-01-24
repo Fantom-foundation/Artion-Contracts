@@ -5,3 +5,4 @@ publish/
 flatten/
 
 .env
+.DS_Store

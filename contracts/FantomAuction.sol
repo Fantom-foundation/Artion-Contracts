@@ -701,6 +701,11 @@ contract FantomAuction is
         );
 
         auction.reservePrice = _reservePrice;
+
+        if (auction.minBid == currentReserve) {
+            auction.minBid = _reservePrice;
+        }
+
         emit UpdateAuctionReservePrice(
             _nftAddress,
             _tokenId,
