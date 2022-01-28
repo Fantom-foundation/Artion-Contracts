@@ -34,14 +34,6 @@ interface IFantomAddressRegistry {
     function royaltyRegistry() external view returns (address);
 }
 
-interface IFantomBundleMarketplace {
-    function validateItemSold(
-        address,
-        uint256,
-        uint256
-    ) external;
-}
-
 interface IFantomNFTFactory {
     function exists(address) external view returns (bool);
 }
@@ -411,8 +403,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, listedItem.quantity);
 
         emit ItemSold(
             _owner,
@@ -546,8 +536,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
                 bytes("")
             );
         }
-        IFantomBundleMarketplace(addressRegistry.bundleMarketplace())
-            .validateItemSold(_nftAddress, _tokenId, offer.quantity);
 
         emit ItemSold(
             _msgSender(),
