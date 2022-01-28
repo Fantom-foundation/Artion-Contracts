@@ -5,3 +5,5 @@ publish/
 flatten/
 
 .env
+contracts/.DS_Store
+.DS_Store
