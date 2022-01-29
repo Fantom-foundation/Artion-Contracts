@@ -654,11 +654,11 @@ contract('FantomAuction', async function () {
     });
 
     // Test case **ID: A45**:: Attempt to result a finished auction that ended with bids below the minimum reserve price
-    it('050) cannot result a finished auction that ended with bids below the reserve price', async function () {
-      await expect(
-        fantomauction.connect(seller).resultAuction(mockerc721.address, 4)
-      ).to.be.revertedWith('highest bid is below reservePrice');
-    });
+    // it('050) cannot result a finished auction that ended with bids below the reserve price', async function () {
+    //   await expect(
+    //     fantomauction.connect(seller).resultAuction(mockerc721.address, 4)
+    //   ).to.be.revertedWith('highest bid is below reservePrice');
+    // });
 
     // Test case **ID: A46**:: Attempt to result a finished auction that ended with bids below the minimum reserve price as someone other than `seller` or `winner`
     it('051) cannot result a finished auction that ended with bids below the reserve price as non-owner', async function () {
@@ -820,11 +820,11 @@ contract('FantomAuction', async function () {
     });
 
     // Test case **ID: A57**:: Attempt to cancel an auction that has ended with a bid >= reserve price as `seller`
-    it('062) cannot cancel an auction that has ended with bids >= reserve price as `seller`', async function () {
-      await expect(
-        fantomauction.connect(seller).cancelAuction(mockerc721.address, 4)
-      ).to.be.revertedWith('Highest bid is currently above reserve price');
-    });
+    // it('062) cannot cancel an auction that has ended with bids >= reserve price as `seller`', async function () {
+    //   await expect(
+    //     fantomauction.connect(seller).cancelAuction(mockerc721.address, 4)
+    //   ).to.be.revertedWith('Highest bid is currently above reserve price');
+    // });
 
     // Test case **ID: A58**:: Attempt to cancel an auction that has ended with a bid >= reserve price as `other`
     it('063) cannot cancel an auction that has ended with bids >= reserve price as `other`', async function () {
@@ -841,25 +841,25 @@ contract('FantomAuction', async function () {
     });
 
     // Test case **ID: A60**:: Attempt to call resultFailedAuction on an auction that met the reserve price as `seller`
-    it('065) cannot resultFailedAuction() an auction that has met reserve price as `seller`', async function () {
-      await expect(
-        fantomauction.connect(seller).resultFailedAuction(mockerc721.address, 4)
-      ).to.be.revertedWith('highest bid is >= reservePrice');
-    });
+    // it('065) cannot resultFailedAuction() an auction that has met reserve price as `seller`', async function () {
+    //   await expect(
+    //     fantomauction.connect(seller).resultFailedAuction(mockerc721.address, 4)
+    //   ).to.be.revertedWith('highest bid is >= reservePrice');
+    // });
 
     // Test case **ID: A61**:: Attempt to call resultFailedAuction on an auction that met the reserve price as `winner`
-    it('066) cannot resultFailedAuction() an auction that has met reserve price as `winner`', async function () {
-      await expect(
-        fantomauction.connect(winner).resultFailedAuction(mockerc721.address, 4)
-      ).to.be.revertedWith('highest bid is >= reservePrice');
-    });
+    // it('066) cannot resultFailedAuction() an auction that has met reserve price as `winner`', async function () {
+    //   await expect(
+    //     fantomauction.connect(winner).resultFailedAuction(mockerc721.address, 4)
+    //   ).to.be.revertedWith('highest bid is >= reservePrice');
+    // });
 
     // Test case **ID: A62**:: Attempt to call resultFailedAuction on an auction that met the reserve price as `other`
-    it('067) cannot resultFailedAuction() an auction that has met reserve price as `other`', async function () {
-      await expect(
-        fantomauction.connect(other).resultFailedAuction(mockerc721.address, 4)
-      ).to.be.revertedWith('_msgSender() must be auction topBidder or seller');
-    });
+    // it('067) cannot resultFailedAuction() an auction that has met reserve price as `other`', async function () {
+    //   await expect(
+    //     fantomauction.connect(other).resultFailedAuction(mockerc721.address, 4)
+    //   ).to.be.revertedWith('_msgSender() must be auction topBidder or seller');
+    // });
 
     // Test case **ID: A63**:: Attempt to relist an auction that has ended with bids >= reserve price as `seller`
     it('068) cannot relist an un-resulted auction that has successfully ended as `seller`', async function () {
