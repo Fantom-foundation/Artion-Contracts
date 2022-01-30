@@ -346,10 +346,11 @@ contract FantomAuction is
             "you are not the highest bidder"
         );
 
-        uint256 _endTime = auctions[_nftAddress][_tokenId].endTime;
+        Auction memory auction = auctions[_nftAddress][_tokenId];
 
         require(
-            _getNow() > _endTime && (_getNow() - _endTime >= 43200),
+            _getNow() > auction.endTime + 43200 ||
+                highestBid.bid < auction.reservePrice,
             "can withdraw only after 12 hours (after auction ended)"
         );
 
