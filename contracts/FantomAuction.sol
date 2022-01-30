@@ -420,6 +420,11 @@ contract FantomAuction is
         // Ensure there is a winner
         require(_winner != address(0), "no open bids");
 
+        require(
+            _winningBid >= auction.reservePrice || _msgSender() == seller,
+            "highest bid is below reservePrice"
+        );
+
         _resultAuction(_nftAddress, _tokenId, _winner, _winningBid);
     }
 
@@ -597,6 +602,13 @@ contract FantomAuction is
 
         // Check auction not already resulted
         require(!auction.resulted, "auction already resulted");
+
+        // Gets info on auction and ensures highest bid is less than the reserve price
+        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        require(
+            highestBid.bid < auction.reservePrice,
+            "Highest bid is currently above reserve price"
+        );
 
         _cancelAuction(_nftAddress, _tokenId, _msgSender());
     }
