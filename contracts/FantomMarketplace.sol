@@ -548,8 +548,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             offer.pricePerItem
         );
 
-        emit OfferCanceled(_creator, _nftAddress, _tokenId);
-
         delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
     }
@@ -625,7 +623,6 @@ contract FantomMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _cancelListing(_nftAddress, _tokenId, _seller);
         }
         delete (offers[_nftAddress][_tokenId][_buyer]);
-        emit OfferCanceled(_buyer, _nftAddress, _tokenId);
     }
 
     ////////////////////////////
