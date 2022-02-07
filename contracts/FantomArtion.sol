@@ -19,6 +19,7 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
         string tokenUri,
         address minter
     );
+
     event UpdatePlatformFee(uint256 platformFee);
     event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
@@ -31,15 +32,15 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
     /// @notice Platform fee
     uint256 public platformFee;
 
-    /// @notice Platform fee receipient
-    address payable public feeReceipient;
+    /// @notice Platform fee recipient
+    address payable public feeRecipient;
 
     /// @notice Contract constructor
     constructor(address payable _feeRecipient, uint256 _platformFee)
         ERC721("ART", "Artion")
     {
         platformFee = _platformFee;
-        feeReceipient = _feeRecipient;
+        feeRecipient = _feeRecipient;
     }
 
     /**
@@ -66,24 +67,23 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
         _safeMint(_beneficiary, tokenId);
         _setTokenURI(tokenId, _tokenUri);
 
-        //set royalty
-        if (_royaltyValue > 0) {
+        // set royalty, if the user requested the royalty to be set
+        if (_royaltyRecipient != address(0)) {
             _setTokenRoyalty(tokenId, _royaltyRecipient, _royaltyValue);
         }
 
         // Send FTM fee to fee recipient
-        feeReceipient.transfer(msg.value);
+        feeRecipient.transfer(msg.value);
 
         // Associate garment designer
         creators[tokenId] = _msgSender();
 
         emit Minted(tokenId, _beneficiary, _tokenUri, _msgSender());
-
         return tokenId;
     }
 
     /**
-     @notice Burns a DigitalaxGarmentNFT, releasing any composed 1155 tokens held by the token itself
+     @notice Burns a NFT
      @dev Only the owner or an approved sender can call this method
      @param _tokenId the token ID to burn
      */
@@ -91,7 +91,7 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
         address operator = _msgSender();
         require(
             ownerOf(_tokenId) == operator || isApproved(_tokenId, operator),
-            "Only garment owner or approved"
+            "Only owner or approved"
         );
 
         // Destroy token mappings
@@ -109,6 +109,20 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
             _receiverTokenId := calldataload(_index)
         }
         return _receiverTokenId;
+    }
+
+    // Set collection-wide default royalty.
+    function setDefaultRoyalty(address _receiver, uint16 _royaltyPercent) external override onlyOwner {
+        _setDefaultRoyalty(_receiver, _royaltyPercent);
+    }
+
+    // Set royalty for the given token.
+    function setTokenRoyalty(uint256 _tokenId, address _receiver, uint16 _royaltyPercent) external override {
+        // only token owner can make the change
+        address operator = _msgSender();
+        require(ownerOf(_tokenId) == operator || isApproved(_tokenId, operator), "Only owner or approved");
+
+        _setTokenRoyalty(_tokenId, _receiver, _royaltyPercent);
     }
 
     /////////////////
@@ -155,7 +169,7 @@ contract Artion is ERC721URIStorage, ERC2981PerTokenRoyalties, Ownable {
         external
         onlyOwner
     {
-        feeReceipient = _platformFeeRecipient;
+        feeRecipient = _platformFeeRecipient;
         emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 

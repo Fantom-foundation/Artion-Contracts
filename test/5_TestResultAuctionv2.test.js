@@ -166,9 +166,9 @@ contract('FantomAuction', async function () {
       );
     });
 
-    it('3) cannot result a finished auction that ended with bids below the reserve price', async function () {
+    it('3) bidder cannot result a finished auction that ended with bids below the reserve price', async function () {
       await expect(
-        fantomauction.connect(seller).resultAuction(mockerc721.address, FOUR)
+        fantomauction.connect(bidder).resultAuction(mockerc721.address, FOUR)
       ).to.be.revertedWith('highest bid is below reservePrice');
     });
 

@@ -346,10 +346,11 @@ contract FantomAuction is
             "you are not the highest bidder"
         );
 
-        uint256 _endTime = auctions[_nftAddress][_tokenId].endTime;
+        Auction memory auction = auctions[_nftAddress][_tokenId];
 
         require(
-            _getNow() > _endTime && (_getNow() - _endTime >= 43200),
+            _getNow() > auction.endTime + 43200 ||
+                highestBid.bid < auction.reservePrice,
             "can withdraw only after 12 hours (after auction ended)"
         );
 
@@ -419,15 +420,10 @@ contract FantomAuction is
 
         // Ensure there is a winner
         require(_winner != address(0), "no open bids");
-        require(
-            _winningBid >= auction.reservePrice,
-            "highest bid is below reservePrice"
-        );
 
-        // Ensure this contract is approved to move the token
         require(
-            IERC721(_nftAddress).isApprovedForAll(_msgSender(), address(this)),
-            "auction not approved"
+            _winningBid >= auction.reservePrice || _msgSender() == seller,
+            "highest bid is below reservePrice"
         );
 
         _resultAuction(_nftAddress, _tokenId, _winner, _winningBid);

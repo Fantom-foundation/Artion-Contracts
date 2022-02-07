@@ -152,11 +152,26 @@ contract FantomNFTTradable is
         address operator = _msgSender();
         require(
             ownerOf(_tokenId) == operator || isApproved(_tokenId, operator),
-            "Only garment owner or approved"
+            "Only owner or approved"
         );
 
         // Destroy token mappings
         _burn(_tokenId);
+    }
+
+
+    // Set collection-wide default royalty.
+    function setDefaultRoyalty(address _receiver, uint16 _royaltyPercent) external override onlyOwner {
+        _setDefaultRoyalty(_receiver, _royaltyPercent);
+    }
+
+    // Set royalty for the given token.
+    function setTokenRoyalty(uint256 _tokenId, address _receiver, uint16 _royaltyPercent) external override {
+        // only token owner can make the change
+        address operator = _msgSender();
+        require(ownerOf(_tokenId) == operator || isApproved(_tokenId, operator), "Only owner or approved");
+
+        _setTokenRoyalty(_tokenId, _receiver, _royaltyPercent);
     }
 
     /**
