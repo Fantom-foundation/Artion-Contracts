@@ -350,7 +350,7 @@ contract FantomAuction is
 
         require(
             _getNow() > auction.endTime + 43200 ||
-                highestBid.bid < auction.reservePrice,
+                (_getNow() > auction.endTime && highestBid.bid < auction.reservePrice),
             "can withdraw only after 12 hours (after auction ended)"
         );
 

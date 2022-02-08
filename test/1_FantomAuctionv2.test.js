@@ -1238,17 +1238,13 @@ contract('FantomAuction', async function () {
     });
 
     // Test case **ID: A**::
-    it('092) `bidder` can successfully withdraw a bid before auction ends IF bid is below reserve price', async function () {
+    it('092) `bidder` cannot withdraw a bid before end of the auction even when bid is below reserve price', async function () {
       await expect(
         fantomauction.connect(bidder).withdrawBid(mockerc721.address, TWO)
       )
-        .to.emit(fantomauction, 'BidWithdrawn')
-        .withArgs(
-          mockerc721.address,
-          TWO,
-          bidder.address,
-          bidderBidAmountMinimum
-        );
+        .to.be.revertedWith(
+        'can withdraw only after 12 hours (after auction ended)'
+      );
     });
 
     // Test case **ID: A**::
