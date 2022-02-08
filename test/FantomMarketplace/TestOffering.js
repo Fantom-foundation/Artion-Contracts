@@ -387,7 +387,7 @@ contract(
     });
 
     it(`The seller accept an offer whose deadline hasnt passed.
-      Event ItemSold and OfferCanceled should be emitted.`, async function () {
+      Event ItemSold should be emitted.`, async function () {
       //Let's mock the current time: 2021-09-23 13:00:00 GMT
       await this.fantomMarketplace.setTime(new BN('1632315600'));
       result = await this.fantomMarketplace.acceptOffer(
@@ -407,13 +407,6 @@ contract(
         quantity: ONE,
         unitPrice: ZERO,
         pricePerItem: ether('18')
-      });
-
-      //Event ItemSold should be emitted
-      expectEvent(result, 'OfferCanceled', {
-        creator: buyer,
-        nft: this.mockERC721.address,
-        tokenId: ZERO
       });
     });
 

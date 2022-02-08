@@ -35,6 +35,7 @@ const FantomAuction = artifacts.require('MockFantomAuction');
 const FantomPriceFeed = artifacts.require('FantomPriceFeed');
 const FantomAddressRegistry = artifacts.require('FantomAddressRegistry');
 const FantomTokenRegistry = artifacts.require('FantomTokenRegistry');
+const FantomRoyaltyRegistry = artifacts.require('FantomRoyaltyRegistry');
 const MockERC20 = artifacts.require('MockERC20');
 const MockERC721 = artifacts.require('MockERC721');
 
@@ -84,6 +85,12 @@ contract(
 
       await this.fantomAddressRegistry.updateTokenRegistry(
         this.fantomTokenRegistry.address
+      );
+      
+      this.royaltyRegistry = await FantomRoyaltyRegistry.new();
+
+      await this.fantomAddressRegistry.updateRoyaltyRegistry(
+        this.royaltyRegistry.address
       );
 
       this.fantomPriceFeed = await FantomPriceFeed.new(
